@@ -255,7 +255,7 @@ loadSavedData()
 <template>
   <ReloadPrompt />
   <div class="container">
-    <h1>Chess ELO Calculator</h1>
+    <h1>♟ Chess ELO Calculator</h1>
 
     <div class="rating-input">
       <div class="rating-group">
@@ -365,6 +365,12 @@ loadSavedData()
     </div>
 
     <button id="addGameBtn" @click="addGame()">+ Add Game</button>
+
+    <div class="footer">
+      <div class="developer-display">
+        Made by František Urban
+      </div>
+    </div>
   </div>
 </template>
 
@@ -381,12 +387,13 @@ loadSavedData()
 }
 
 h1 {
-  background: linear-gradient(90deg, #4a4a4a, #5a5a5a);
-  padding: 12px;
+  background: #2a2a2a;
+  padding: 16px;
   border-radius: 5px;
   margin-bottom: 20px;
   text-align: center;
   font-size: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .rating-input {
@@ -667,6 +674,19 @@ button:active {
   width: 100%;
 }
 
+.footer {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.developer-display {
+  text-align: center;
+  font-size: 13px;
+  color: #aaa;
+  padding: 8px;
+}
+
 @media (max-width: 480px) {
   .container {
     padding: 15px;
@@ -678,7 +698,7 @@ button:active {
 
   h1 {
     font-size: 20px;
-    padding: 10px;
+    padding: 12px;
     margin-bottom: 15px;
   }
 
@@ -753,7 +773,7 @@ button:active {
 
   h1 {
     font-size: 18px;
-    padding: 8px;
+    padding: 10px;
   }
 
   .games-header {
