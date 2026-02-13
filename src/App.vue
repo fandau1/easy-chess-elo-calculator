@@ -394,6 +394,7 @@ loadSavedData()
 </template>
 
 <style scoped>
+/* === CONTAINER A LAYOUT === */
 .container {
   max-width: 500px;
   width: 100%;
@@ -415,6 +416,7 @@ h1 {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* === FORMULÁŘOVÉ PRVKY === */
 .rating-input {
   display: flex;
   align-items: center;
@@ -423,7 +425,8 @@ h1 {
   flex-wrap: wrap;
 }
 
-.rating-group {
+.rating-group,
+.k-factor-group {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -431,7 +434,8 @@ h1 {
   gap: 5px;
 }
 
-.rating-group label {
+.rating-group label,
+.k-factor-group label {
   font-size: 13px;
   color: #aaa;
   padding-left: 2px;
@@ -448,20 +452,6 @@ h1 {
   box-sizing: border-box;
 }
 
-.k-factor-group {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 5px;
-}
-
-.k-factor-group label {
-  font-size: 13px;
-  color: #aaa;
-  padding-left: 2px;
-}
-
 .k-factor-group select {
   padding: 12px 16px;
   font-size: 16px;
@@ -473,7 +463,7 @@ h1 {
   box-sizing: border-box;
 }
 
-
+/* === TLAČÍTKA === */
 button {
   padding: 14px;
   font-size: 16px;
@@ -483,7 +473,7 @@ button {
   color: #000;
   cursor: pointer;
   font-weight: bold;
-  transition: background 0.3s;
+  transition: background 0.3s, transform 0.1s;
   min-height: 44px;
 }
 
@@ -495,6 +485,47 @@ button:active {
   transform: scale(0.98);
 }
 
+.action-buttons {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+#addGameBtn {
+  flex: 1;
+}
+
+#clearBtn {
+  background: #f87171;
+  color: #000;
+  flex: 0 0 auto;
+  padding: 14px 20px;
+}
+
+#clearBtn:hover:not(:disabled) {
+  background: #fa8888;
+}
+
+#clearBtn:disabled {
+  background: #666;
+  color: #999;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.remove-btn {
+  background: #666;
+  color: white;
+  padding: 8px;
+  font-size: 16px;
+  min-height: 40px;
+}
+
+.remove-btn:hover {
+  background: #888;
+}
+
+/* === STATISTIKY === */
 .stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -531,14 +562,17 @@ button:active {
   transition: color 0.3s;
 }
 
-.stat-value.positive {
+.stat-value.positive,
+.rating-change.positive {
   color: #4ade80;
 }
 
-.stat-value.negative {
+.stat-value.negative,
+.rating-change.negative {
   color: #f87171;
 }
 
+/* === HRY === */
 .games {
   margin-top: 20px;
 }
@@ -562,36 +596,6 @@ button:active {
 .games-header span:nth-child(3),
 .games-header span:nth-child(4) {
   text-align: center;
-}
-
-.drop-zone {
-  height: 8px;
-  margin: 0;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.drop-zone::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 2px;
-  background: transparent;
-  transition: all 0.2s ease;
-}
-
-.drop-zone.drop-zone-active {
-  height: 40px;
-  margin: 5px 0;
-}
-
-.drop-zone.drop-zone-active::before {
-  height: 4px;
-  background: #4ade80;
-  box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
 }
 
 .game-row {
@@ -635,25 +639,25 @@ button:active {
   pointer-events: none;
 }
 
-.game-row input[type="number"] {
+.game-row input[type="number"],
+.game-row select {
   padding: 10px 8px;
   font-size: 16px;
   border: 2px solid #666;
   border-radius: 5px;
   background: #fff;
   color: #000;
-  font-weight: bold;
   min-width: 0;
   box-sizing: border-box;
+}
+
+.game-row input[type="number"] {
+  font-weight: bold;
 }
 
 .game-row select {
   padding: 10px 6px;
   font-size: 15px;
-  border: 2px solid #666;
-  border-radius: 5px;
-  background: #fff;
-  color: #000;
 }
 
 .rating-change {
@@ -665,57 +669,38 @@ button:active {
   white-space: nowrap;
 }
 
-.rating-change.positive {
-  color: #4ade80;
+/* === DRAG AND DROP === */
+.drop-zone {
+  height: 8px;
+  margin: 0;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
-.rating-change.negative {
-  color: #f87171;
+.drop-zone::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 2px;
+  background: transparent;
+  transition: all 0.2s ease;
 }
 
-.remove-btn {
-  background: #666;
-  color: white;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  padding: 8px;
-  font-size: 16px;
-  min-height: 40px;
+.drop-zone.drop-zone-active {
+  height: 40px;
+  margin: 5px 0;
 }
 
-.remove-btn:hover {
-  background: #888;
+.drop-zone.drop-zone-active::before {
+  height: 4px;
+  background: #4ade80;
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
 }
 
-.action-buttons {
-  margin-top: 10px;
-  display: flex;
-  gap: 10px;
-}
-
-#addGameBtn {
-  flex: 1;
-}
-
-#clearBtn {
-  background: #f87171;
-  color: #000;
-  flex: 0 0 auto;
-  padding: 14px 20px;
-}
-
-#clearBtn:hover:not(:disabled) {
-  background: #fa8888;
-}
-
-#clearBtn:disabled {
-  background: #666;
-  color: #999;
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
+/* === PATIČKA === */
 .footer {
   margin-top: 20px;
   padding-top: 15px;
@@ -729,6 +714,7 @@ button:active {
   padding: 8px;
 }
 
+/* === RESPONZIVNÍ DESIGN === */
 @media (max-width: 480px) {
   .container {
     padding: 15px;
@@ -748,12 +734,14 @@ button:active {
     margin-bottom: 15px;
   }
 
-  .rating-group {
+  .rating-group,
+  .k-factor-group {
     flex: 0 0 100%;
     gap: 6px;
   }
 
-  .rating-group label {
+  .rating-group label,
+  .k-factor-group label {
     font-size: 12px;
   }
 
@@ -762,37 +750,24 @@ button:active {
     padding: 10px;
   }
 
-  .k-factor-group {
-    flex: 0 0 100%;
-    gap: 6px;
-  }
-
-  .k-factor-group label {
-    font-size: 12px;
-  }
-
   .k-factor-group select {
     font-size: 14px;
     padding: 10px 12px;
   }
 
-
-
   .stat-item {
     padding: 10px;
   }
 
-  .games-header {
-    grid-template-columns: 30px 1fr 65px 70px 40px;
-    gap: 5px;
-    padding: 6px;
-    font-size: 11px;
-  }
-
+  .games-header,
   .game-row {
     grid-template-columns: 30px 1fr 65px 70px 40px;
     gap: 5px;
     padding: 6px;
+  }
+
+  .games-header {
+    font-size: 11px;
   }
 
   .game-row label {
@@ -827,18 +802,17 @@ button:active {
     padding: 10px;
   }
 
-  .games-header {
-    grid-template-columns: 28px 1fr 60px 65px 36px;
-    gap: 4px;
-    padding: 5px;
-    font-size: 10px;
-  }
-
+  .games-header,
   .game-row {
     grid-template-columns: 28px 1fr 60px 65px 36px;
     gap: 4px;
     padding: 5px;
   }
+
+  .games-header {
+    font-size: 10px;
+  }
+
 
   .game-row input[type="number"],
   .game-row select {
