@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import ReloadPrompt from './components/ReloadPrompt.vue'
 
 interface Game {
   id: number
@@ -118,6 +119,7 @@ addGame(2456, 1)
 </script>
 
 <template>
+  <ReloadPrompt />
   <div class="container">
     <h1>Chess ELO</h1>
 
@@ -135,8 +137,6 @@ addGame(2456, 1)
     </div>
 
     <div class="buttons">
-      <button @click="calculate">Calculate</button>
-      <button @click="addGame()">Add Game</button>
       <button @click="saveData">Save</button>
       <button @click="loadData">Load</button>
     </div>
@@ -213,31 +213,31 @@ h1 {
   display: flex;
   align-items: center;
   margin-bottom: 20px;
-  gap: 15px;
+  gap: 10px;
   flex-wrap: wrap;
-  max-width: 100%;
 }
 
 .rating-input label {
-  flex: 0 0 100px;
+  flex: 0 0 100%;
   font-size: 16px;
 }
 
 .rating-input input {
   flex: 1;
-  padding: 10px;
+  min-width: 0;
+  padding: 12px;
   font-size: 18px;
   border: 2px solid #666;
   border-radius: 5px;
   background: #fff;
   color: #000;
   font-weight: bold;
-  max-width: 100%;
   box-sizing: border-box;
 }
 
 .rating-input select {
-  padding: 10px;
+  flex: 0 0 auto;
+  padding: 12px 16px;
   font-size: 16px;
   border: 2px solid #666;
   border-radius: 5px;
@@ -248,13 +248,13 @@ h1 {
 
 .buttons {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-bottom: 20px;
 }
 
 button {
-  padding: 12px;
+  padding: 14px;
   font-size: 16px;
   border: none;
   border-radius: 5px;
@@ -263,6 +263,7 @@ button {
   cursor: pointer;
   font-weight: bold;
   transition: background 0.3s;
+  min-height: 44px;
 }
 
 button:hover {
@@ -276,18 +277,18 @@ button:active {
 .stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 15px;
+  gap: 10px;
   margin-bottom: 20px;
 }
 
 .stat-item {
   background: #2a2a2a;
-  padding: 10px;
+  padding: 12px;
   border-radius: 5px;
 }
 
 .stat-label {
-  font-size: 14px;
+  font-size: 13px;
   color: #aaa;
   margin-bottom: 5px;
 }
@@ -299,18 +300,14 @@ button:active {
 
 .games {
   margin-top: 20px;
-  max-width: 100%;
-  overflow-x: hidden;
 }
 
 .game-row {
   display: grid;
-  grid-template-columns: 65px minmax(0, 1fr) 80px 85px 30px;
-  gap: 8px;
+  grid-template-columns: 60px 1fr 70px 75px 40px;
+  gap: 6px;
   margin-bottom: 10px;
   align-items: center;
-  width: 100%;
-  max-width: 100%;
 }
 
 .game-row label {
@@ -319,20 +316,20 @@ button:active {
 }
 
 .game-row input[type="number"] {
-  padding: 8px;
+  padding: 10px 8px;
   font-size: 16px;
   border: 2px solid #666;
   border-radius: 5px;
   background: #fff;
   color: #000;
   font-weight: bold;
-  max-width: 100%;
+  min-width: 0;
   box-sizing: border-box;
 }
 
 .game-row select {
-  padding: 8px;
-  font-size: 14px;
+  padding: 10px 6px;
+  font-size: 15px;
   border: 2px solid #666;
   border-radius: 5px;
   background: #fff;
@@ -340,11 +337,11 @@ button:active {
 }
 
 .rating-change {
-  padding: 4px 6px;
+  padding: 6px 4px;
   border-radius: 5px;
   font-weight: bold;
   text-align: center;
-  font-size: 15px;
+  font-size: 14px;
   white-space: nowrap;
 }
 
@@ -362,8 +359,9 @@ button:active {
   border: none;
   border-radius: 3px;
   cursor: pointer;
-  padding: 5px 8px;
-  font-size: 14px;
+  padding: 8px;
+  font-size: 16px;
+  min-height: 40px;
 }
 
 .remove-btn:hover {
@@ -375,15 +373,37 @@ button:active {
   width: 100%;
 }
 
-@media (max-width: 550px) {
+@media (max-width: 480px) {
   .container {
     padding: 15px;
-    margin: 0 10px;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  h1 {
+    font-size: 20px;
+    padding: 10px;
+    margin-bottom: 15px;
+  }
+
+  .rating-input {
+    margin-bottom: 15px;
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .stat-item {
+    padding: 10px;
   }
 
   .game-row {
-    grid-template-columns: 60px minmax(0, 1fr) 75px 80px 30px;
-    gap: 6px;
+    grid-template-columns: 55px 1fr 65px 70px 40px;
+    gap: 5px;
   }
 
   .game-row label {
@@ -391,8 +411,43 @@ button:active {
   }
 
   .rating-change {
+    font-size: 13px;
+  }
+
+  button {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .container {
+    padding: 10px;
+  }
+
+  h1 {
+    font-size: 18px;
+    padding: 8px;
+  }
+
+  .game-row {
+    grid-template-columns: 50px 1fr 60px 65px 36px;
+    gap: 4px;
+  }
+
+  .game-row input[type="number"],
+  .game-row select {
+    padding: 8px 4px;
     font-size: 14px;
-    padding: 4px 4px;
+  }
+
+  .rating-change {
+    font-size: 12px;
+    padding: 4px 2px;
+  }
+
+  .remove-btn {
+    padding: 6px;
+    font-size: 14px;
   }
 }
 </style>

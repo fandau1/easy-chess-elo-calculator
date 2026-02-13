@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="512"
+   height="512"
+   viewBox="0 0 512 512"
+   version="1.1"
+   id="svg1"
+   xml:space="preserve"
+   inkscape:version="1.4 (86a8ad7, 2024-10-11)"
+   sodipodi:docname="icon2.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     inkscape:export-bgcolor="#5b616a00"
+     inkscape:zoom="1.1145218"
+     inkscape:cx="159.70975"
+     inkscape:cy="273.21134"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" /><defs
+     id="defs1"><linearGradient
+       id="linearGradient6"
+       inkscape:collect="always"><stop
+         style="stop-color:#000000;stop-opacity:0;"
+         offset="0"
+         id="stop6" /><stop
+         style="stop-color:#000000;stop-opacity:0;"
+         offset="1"
+         id="stop7" /></linearGradient><linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient6"
+       id="linearGradient7"
+       x1="111.4831"
+       y1="255.99999"
+       x2="400.51689"
+       y2="255.99999"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(0)" /></defs><g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-3.9999989e-8,30.849252)"><g
+       id="g2"
+       transform="matrix(0.8719858,0,0,0.8719858,32.771635,1.9223832)"
+       style="fill:#c05746;fill-opacity:1;stroke-width:0.715241">
+	<path
+   class="st0"
+   d="m 115.177,431.387 h 281.647 c 0,0 19.259,-3.795 19.259,-22.736 0,-28.422 -26.138,-38.79 -38.519,-54.953 C 325.289,288.095 329.096,128.356 329.096,128.356 H 182.904 c 0,0 3.809,159.739 -48.492,225.342 -12.358,16.164 -38.495,26.532 -38.495,54.953 0,18.941 19.26,22.736 19.26,22.736 z"
+   id="path1"
+   style="fill:#c05746;fill-opacity:1;stroke-width:0.715241" />
+	<polygon
+   class="st0"
+   points="191.822,0 137.261,0 137.261,79.863 182.904,108.397 329.096,108.397 374.714,79.863 374.714,0 320.178,0 320.178,43.359 281.659,43.359 281.659,0 230.317,0 230.317,43.359 191.822,43.359 "
+   id="polygon1"
+   style="fill:#c05746;fill-opacity:1;stroke-width:0.715241" />
+	<polygon
+   class="st0"
+   points="412.521,477.78 396.824,451.348 115.177,451.348 99.479,477.78 99.479,512 412.521,512 "
+   id="polygon2"
+   style="fill:#c05746;fill-opacity:1;stroke-width:0.715241" />
+</g></g><style
+     type="text/css"
+     id="style1">
+	.st0{fill:#000000;}
+</style><rect
+     style="fill:#60afff;fill-opacity:1;stroke:#60afff;stroke-width:80;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:normal"
+     id="rect4"
+     width="277.24893"
+     height="70.387199"
+     x="117.37553"
+     y="220.8064" /><text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:181.014px;font-family:Consolas;-inkscape-font-specification:Consolas;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#fffff6;fill-opacity:1;stroke:#0d1321;stroke-width:10;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+     x="100.22012"
+     y="313.71588"
+     id="text3-4"><tspan
+       sodipodi:role="line"
+       id="tspan3-5"
+       x="100.22012"
+       y="313.71588"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Consolas;-inkscape-font-specification:'Consolas Bold';fill:#fffff6;fill-opacity:1;stroke:#0d1321;stroke-width:10;stroke-dasharray:none;stroke-opacity:1">ELO</tspan></text></svg>
