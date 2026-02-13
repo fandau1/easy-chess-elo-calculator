@@ -286,19 +286,19 @@ loadSavedData()
     <div class="stats">
       <div class="stat-item">
         <div class="stat-label">Average:</div>
-        <div class="stat-value">{{ average.toFixed(1) }}</div>
+        <div class="stat-value" :class="average > myRating ? 'positive' : average < myRating ? 'negative' : ''">{{ average.toFixed(1) }}</div>
       </div>
-      <div class="stat-item">
+      <div class="stat-item" :class="totalChange > 0 ? 'stat-positive' : totalChange < 0 ? 'stat-negative' : ''">
         <div class="stat-label">Change:</div>
-        <div class="stat-value">{{ (totalChange >= 0 ? '+' : '') + totalChange.toFixed(1) }}</div>
+        <div class="stat-value" :class="totalChange > 0 ? 'positive' : totalChange < 0 ? 'negative' : ''">{{ (totalChange >= 0 ? '+ ' : '') + totalChange.toFixed(1) }}</div>
       </div>
-      <div class="stat-item">
+      <div class="stat-item" :class="performance > myRating ? 'stat-positive' : performance < myRating ? 'stat-negative' : ''">
         <div class="stat-label">Performance:</div>
-        <div class="stat-value">{{ performance.toFixed(1) }}</div>
+        <div class="stat-value" :class="performance > myRating ? 'positive' : performance < myRating ? 'negative' : ''">{{ performance.toFixed(1) }}</div>
       </div>
       <div class="stat-item">
         <div class="stat-label">Points:</div>
-        <div class="stat-value">{{ totalPoints.toFixed(1) }}/{{ games.length }}</div>
+        <div class="stat-value">{{ totalPoints.toFixed(1) }} / {{ games.length }}</div>
       </div>
     </div>
 
@@ -400,19 +400,18 @@ h1 {
 .rating-group {
   flex: 1;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
 }
 
 .rating-group label {
-  font-size: 14px;
-  white-space: nowrap;
-  color: #ccc;
+  font-size: 13px;
+  color: #aaa;
+  padding-left: 2px;
 }
 
 .rating-group input {
-  flex: 1;
-  min-width: 0;
   padding: 12px;
   font-size: 18px;
   border: 2px solid #666;
@@ -426,18 +425,18 @@ h1 {
 .k-factor-group {
   flex: 1;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
 }
 
 .k-factor-group label {
-  font-size: 14px;
-  white-space: nowrap;
-  color: #ccc;
+  font-size: 13px;
+  color: #aaa;
+  padding-left: 2px;
 }
 
 .k-factor-group select {
-  flex: 1;
   padding: 12px 16px;
   font-size: 16px;
   border: 2px solid #666;
@@ -481,6 +480,17 @@ button:active {
   background: #2a2a2a;
   padding: 12px;
   border-radius: 5px;
+  transition: background 0.3s;
+}
+
+.stat-item.stat-positive {
+  background: rgba(74, 222, 128, 0.15);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.stat-item.stat-negative {
+  background: rgba(248, 113, 113, 0.15);
+  border: 1px solid rgba(248, 113, 113, 0.3);
 }
 
 .stat-label {
@@ -492,6 +502,15 @@ button:active {
 .stat-value {
   font-size: 18px;
   font-weight: bold;
+  transition: color 0.3s;
+}
+
+.stat-value.positive {
+  color: #4ade80;
+}
+
+.stat-value.negative {
+  color: #f87171;
 }
 
 .games {
@@ -696,10 +715,6 @@ button:active {
   }
 
 
-  .stats {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
 
   .stat-item {
     padding: 10px;
