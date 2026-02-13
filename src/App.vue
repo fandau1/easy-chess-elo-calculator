@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import ReloadPrompt from './components/ReloadPrompt.vue'
-
-interface Game {
-  id: number
-  opponentRating: number
-  result: number
-  change: number
-}
+import {
+  type Game,
+  recalculateAllGames,
+  calculateNewGameChange,
+  calculatePerformance,
+  validateRating,
+  validateKFactor,
+  validateResult
+} from './utils/eloCalculator'
 
 interface SavedData {
   myRating: number
@@ -90,27 +92,21 @@ const performance = computed(() => {
   }
 })
 
-function calculateGameChange(opponentRating: number, result: number): number {
-  // Validace opponent rating
-  if (!opponentRating || isNaN(opponentRating) || opponentRating < 0) {
-    return 0
-  }
-
-  // Validace result
-  if (isNaN(result) || result < 0 || result > 1) {
-    return 0
-  }
-
-  const expected = 1 / (1 + Math.pow(10, (opponentRating - myRating.value) / 400))
-  return kFactor.value * (result - expected)
-}
-
 function addGame(opponentRating = 2000, result = 1) {
   // Validace vstupů
   const validRating = !isNaN(opponentRating) && opponentRating > 0 ? opponentRating : 2000
   const validResult = !isNaN(result) && result >= 0 && result <= 1 ? result : 1
 
-  const change = calculateGameChange(validRating, validResult)
+  // Vypočítat aktuální kumulativní rating (po všech předchozích hrách)
+  let currentRating = myRating.value
+  games.value.forEach(game => {
+    currentRating += game.change
+  })
+
+  // Vypočítat změnu pro novou hru na základě aktuálního ratingu
+  const expected = 1 / (1 + Math.pow(10, (validRating - currentRating) / 400))
+  const change = kFactor.value * (validResult - expected)
+
   games.value.push({
     id: gameCounter++,
     opponentRating: validRating,
@@ -122,7 +118,7 @@ function addGame(opponentRating = 2000, result = 1) {
 
 function removeGame(gameId: number) {
   games.value = games.value.filter(game => game.id !== gameId)
-  autoSave()
+  calculate() // Přepočítat všechny změny po odebrání hry
 }
 
 function calculate() {
@@ -136,12 +132,20 @@ function calculate() {
     kFactor.value = 15
   }
 
-  // Přepočítat změny pro všechny hry - vytvoříme nové pole, aby Vue detekoval změnu
+  // Přepočítat změny KUMULATIVNĚ - každá hra ovlivňuje rating pro další hru
+  let currentRating = myRating.value
+
   games.value = games.value.map(game => {
     // Validace game data
     const validRating = !isNaN(game.opponentRating) && game.opponentRating > 0 ? game.opponentRating : 2000
     const validResult = !isNaN(game.result) && game.result >= 0 && game.result <= 1 ? game.result : 1
-    const newChange = calculateGameChange(validRating, validResult)
+
+    // Vypočítat expected score na základě AKTUÁLNÍHO ratingu (po předchozích hrách)
+    const expected = 1 / (1 + Math.pow(10, (validRating - currentRating) / 400))
+    const newChange = kFactor.value * (validResult - expected)
+
+    // Aktualizovat rating pro další hru
+    currentRating += newChange
 
     return {
       id: game.id,
@@ -254,12 +258,15 @@ function handleDrop(event: DragEvent, targetIndex: number) {
 
   const list = [...games.value]
   const [draggedItem] = list.splice(fromIndex, 1)
+
+  if (!draggedItem) return
+
   list.splice(toIndex, 0, draggedItem)
 
   games.value = list
 
-  // Reset stavu se provede v handleDragEnd, které se volá automaticky po dropu
-  autoSave()
+  // Přepočítat všechny změny, protože se změnilo pořadí
+  calculate()
 }
 
 // Validace input hodnot
@@ -280,11 +287,7 @@ function validateGameInput(game: Game) {
 }
 
 function validateMyRating() {
-  if (!myRating.value || isNaN(myRating.value) || myRating.value < 0) {
-    myRating.value = 1500
-  }
-  if (myRating.value < 100) myRating.value = 100
-  if (myRating.value > 4000) myRating.value = 4000
+  myRating.value = validateRating(myRating.value, 1500)
   calculate()
 }
 
