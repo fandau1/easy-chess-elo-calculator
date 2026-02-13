@@ -20,7 +20,7 @@ const kFactor = ref(15)
 const games = ref<Game[]>([])
 let gameCounter = 1
 
-// Načíst uložená data při startu
+// Načíst uložená data
 function loadSavedData() {
   const savedData = localStorage.getItem('chessEloData')
   if (savedData) {
