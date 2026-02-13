@@ -109,6 +109,89 @@ function loadData() {
   alert('Data loaded!')
 }
 
+// Drag and drop functionality
+let draggedIndex = -1
+
+function handleDragStart(event: DragEvent, index: number) {
+  draggedIndex = index
+  const target = event.target as HTMLElement
+  target.classList.add('dragging')
+
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+  }
+}
+
+function handleDragEnd(event: DragEvent) {
+  const target = event.target as HTMLElement
+  target.classList.remove('dragging')
+
+  // Odstranit všechny drop-zone třídy
+  document.querySelectorAll('.drop-zone-active').forEach(el => {
+    el.classList.remove('drop-zone-active')
+  })
+
+  draggedIndex = -1
+}
+
+function handleDropZoneOver(event: DragEvent) {
+  event.preventDefault()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+}
+
+function handleDropZoneEnter(event: DragEvent) {
+  if (draggedIndex === -1) return
+  const target = event.currentTarget as HTMLElement
+  target.classList.add('drop-zone-active')
+}
+
+function handleDropZoneLeave(event: DragEvent) {
+  const target = event.currentTarget as HTMLElement
+  target.classList.remove('drop-zone-active')
+}
+
+function handleDropZoneDrop(event: DragEvent, targetIndex: number) {
+  event.preventDefault()
+  const target = event.currentTarget as HTMLElement
+  target.classList.remove('drop-zone-active')
+
+  if (draggedIndex === -1) return
+
+  const draggedGame = games.value[draggedIndex]
+  if (!draggedGame) return
+
+  // Vypočítat správný cílový index
+  let newIndex = targetIndex
+  if (draggedIndex < targetIndex) {
+    newIndex = targetIndex - 1
+  }
+
+  if (draggedIndex === newIndex) return
+
+  games.value.splice(draggedIndex, 1)
+  games.value.splice(newIndex, 0, draggedGame)
+
+  draggedIndex = -1
+}
+
+function showKFactorHelp() {
+  const helpText = `K-Factor Information:
+
+K-10 (2400+): For players rated 2400+ - Minimal rating changes
+K-15 (FIDE Standard): Standard FIDE rating - Balanced changes
+K-20 (Under 2400): For players under 2400 - Moderate volatility
+K-25: Medium volatility
+K-30 (Rapid/Blitz): For fast games - Higher volatility
+K-40 (Juniors/Beginners): For new players - Maximum rating movement
+
+Higher K = bigger rating changes per game
+Lower K = more stable rating`
+
+  alert(helpText)
+}
+
 // Initialize with sample games
 addGame(2245, 1)
 addGame(2458, 0.5)
@@ -121,19 +204,25 @@ addGame(2456, 1)
 <template>
   <ReloadPrompt />
   <div class="container">
-    <h1>Chess ELO</h1>
+    <h1>Chess ELO Calculator</h1>
 
     <div class="rating-input">
-      <label>My Rating:</label>
-      <input type="number" v-model.number="myRating" @change="calculate">
-      <select v-model.number="kFactor" @change="calculate">
-        <option :value="10">K-10</option>
-        <option :value="15">K-15</option>
-        <option :value="20">K-20</option>
-        <option :value="25">K-25</option>
-        <option :value="30">K-30</option>
-        <option :value="40">K-40</option>
-      </select>
+      <div class="rating-group">
+        <label>My Rating:</label>
+        <input type="number" v-model.number="myRating" @change="calculate">
+      </div>
+      <div class="k-factor-group">
+        <label>K-Factor:</label>
+        <select v-model.number="kFactor" @change="calculate">
+          <option :value="10">K-10 (2400+)</option>
+          <option :value="15">K-15 (FIDE Standard)</option>
+          <option :value="20">K-20 (Under 2400)</option>
+          <option :value="25">K-25</option>
+          <option :value="30">K-30 (Rapid/Blitz)</option>
+          <option :value="40">K-40 (Juniors/Beginners)</option>
+        </select>
+        <span class="k-factor-info" @click="showKFactorHelp">ⓘ</span>
+      </div>
     </div>
 
     <div class="buttons">
@@ -161,27 +250,61 @@ addGame(2456, 1)
     </div>
 
     <div class="games">
-      <div v-for="(game, index) in games" :key="game.id" class="game-row">
-        <label>Game #{{ index + 1 }}:</label>
-        <input
-          type="number"
-          v-model.number="game.opponentRating"
-          @change="calculate"
-          class="opponent-rating"
-        >
-        <select v-model.number="game.result" @change="calculate" class="game-result">
-          <option :value="1">1</option>
-          <option :value="0.5">0.5</option>
-          <option :value="0">0</option>
-        </select>
-        <span
-          class="rating-change"
-          :class="game.change >= 0 ? 'positive' : 'negative'"
-        >
-          {{ (game.change >= 0 ? '+' : '') + game.change.toFixed(2) }}
-        </span>
-        <button class="remove-btn" @click="removeGame(game.id)">-</button>
+      <!-- Záhlaví s popisky -->
+      <div class="games-header">
+        <span>#</span>
+        <span>Opponent ELO</span>
+        <span>Result</span>
+        <span>Change</span>
+        <span></span>
       </div>
+
+      <!-- Drop zone na začátku -->
+      <div
+        class="drop-zone"
+        @dragover="handleDropZoneOver"
+        @dragenter="handleDropZoneEnter"
+        @dragleave="handleDropZoneLeave"
+        @drop="handleDropZoneDrop($event, 0)"
+      ></div>
+
+      <template v-for="(game, index) in games" :key="game.id">
+        <div
+          class="game-row"
+          draggable="true"
+          @dragstart="handleDragStart($event, index)"
+          @dragend="handleDragEnd"
+        >
+          <label class="game-number">{{ index + 1 }}</label>
+          <input
+            type="number"
+            v-model.number="game.opponentRating"
+            @change="calculate"
+            class="opponent-rating"
+          >
+          <select v-model.number="game.result" @change="calculate" class="game-result">
+            <option :value="1">1</option>
+            <option :value="0.5">0.5</option>
+            <option :value="0">0</option>
+          </select>
+          <span
+            class="rating-change"
+            :class="game.change >= 0 ? 'positive' : 'negative'"
+          >
+            {{ (game.change >= 0 ? '+' : '') + game.change.toFixed(2) }}
+          </span>
+          <button class="remove-btn" @click="removeGame(game.id)">-</button>
+        </div>
+
+        <!-- Drop zone mezi položkami -->
+        <div
+          class="drop-zone"
+          @dragover="handleDropZoneOver"
+          @dragenter="handleDropZoneEnter"
+          @dragleave="handleDropZoneLeave"
+          @drop="handleDropZoneDrop($event, index + 1)"
+        ></div>
+      </template>
     </div>
 
     <button id="addGameBtn" @click="addGame()">+ Add Game</button>
@@ -217,12 +340,20 @@ h1 {
   flex-wrap: wrap;
 }
 
-.rating-input label {
-  flex: 0 0 100%;
-  font-size: 16px;
+.rating-group {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.rating-input input {
+.rating-group label {
+  font-size: 14px;
+  white-space: nowrap;
+  color: #ccc;
+}
+
+.rating-group input {
   flex: 1;
   min-width: 0;
   padding: 12px;
@@ -235,8 +366,21 @@ h1 {
   box-sizing: border-box;
 }
 
-.rating-input select {
-  flex: 0 0 auto;
+.k-factor-group {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.k-factor-group label {
+  font-size: 14px;
+  white-space: nowrap;
+  color: #ccc;
+}
+
+.k-factor-group select {
+  flex: 1;
   padding: 12px 16px;
   font-size: 16px;
   border: 2px solid #666;
@@ -244,6 +388,19 @@ h1 {
   background: #fff;
   color: #000;
   cursor: pointer;
+  box-sizing: border-box;
+}
+
+.k-factor-info {
+  font-size: 18px;
+  color: #4ade80;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.3s;
+}
+
+.k-factor-info:hover {
+  color: #22c55e;
 }
 
 .buttons {
@@ -302,17 +459,96 @@ button:active {
   margin-top: 20px;
 }
 
+.games-header {
+  display: grid;
+  grid-template-columns: 35px 1fr 70px 75px 40px;
+  gap: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #aaa;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.games-header span:first-child {
+  text-align: center;
+}
+
+.games-header span:nth-child(3),
+.games-header span:nth-child(4) {
+  text-align: center;
+}
+
+.drop-zone {
+  height: 8px;
+  margin: 0;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.drop-zone::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 2px;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.drop-zone.drop-zone-active {
+  height: 40px;
+  margin: 5px 0;
+}
+
+.drop-zone.drop-zone-active::before {
+  height: 4px;
+  background: #4ade80;
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+}
+
 .game-row {
   display: grid;
-  grid-template-columns: 60px 1fr 70px 75px 40px;
+  grid-template-columns: 35px 1fr 70px 75px 40px;
   gap: 6px;
-  margin-bottom: 10px;
+  margin: 0;
   align-items: center;
+  cursor: grab;
+  padding: 8px;
+  border-radius: 5px;
+  transition: background 0.2s, transform 0.1s, opacity 0.2s;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.game-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.game-row:active {
+  cursor: grabbing;
+}
+
+.game-row.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .game-row label {
-  font-size: 13px;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
   white-space: nowrap;
+  color: #aaa;
+}
+
+.game-number {
+  user-select: none;
+  pointer-events: none;
 }
 
 .game-row input[type="number"] {
@@ -392,6 +628,38 @@ button:active {
     margin-bottom: 15px;
   }
 
+  .rating-group {
+    flex: 0 0 100%;
+    gap: 6px;
+  }
+
+  .rating-group label {
+    font-size: 12px;
+  }
+
+  .rating-group input {
+    font-size: 16px;
+    padding: 10px;
+  }
+
+  .k-factor-group {
+    flex: 0 0 100%;
+    gap: 6px;
+  }
+
+  .k-factor-group label {
+    font-size: 12px;
+  }
+
+  .k-factor-group select {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  .k-factor-info {
+    font-size: 16px;
+  }
+
   .stats {
     grid-template-columns: 1fr;
     gap: 8px;
@@ -401,13 +669,21 @@ button:active {
     padding: 10px;
   }
 
-  .game-row {
-    grid-template-columns: 55px 1fr 65px 70px 40px;
+  .games-header {
+    grid-template-columns: 30px 1fr 65px 70px 40px;
     gap: 5px;
+    padding: 6px;
+    font-size: 11px;
+  }
+
+  .game-row {
+    grid-template-columns: 30px 1fr 65px 70px 40px;
+    gap: 5px;
+    padding: 6px;
   }
 
   .game-row label {
-    font-size: 12px;
+    font-size: 14px;
   }
 
   .rating-change {
@@ -429,9 +705,17 @@ button:active {
     padding: 8px;
   }
 
-  .game-row {
-    grid-template-columns: 50px 1fr 60px 65px 36px;
+  .games-header {
+    grid-template-columns: 28px 1fr 60px 65px 36px;
     gap: 4px;
+    padding: 5px;
+    font-size: 10px;
+  }
+
+  .game-row {
+    grid-template-columns: 28px 1fr 60px 65px 36px;
+    gap: 4px;
+    padding: 5px;
   }
 
   .game-row input[type="number"],
