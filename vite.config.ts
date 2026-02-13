@@ -8,6 +8,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: process.env.NODE_ENV === 'production' ? '/easy-chess-elo-calculator/' : '/',
   plugins: [
     vue(),
     vueJsx(),
@@ -22,8 +23,8 @@ export default defineConfig({
         theme_color: '#3a3a3a',
         background_color: '#2a2a2a',
         display: 'standalone',
-        scope: '/',
-        start_url: '/',
+        scope: process.env.NODE_ENV === 'production' ? '/easy-chess-elo-calculator/' : '/',
+        start_url: process.env.NODE_ENV === 'production' ? '/easy-chess-elo-calculator/' : '/',
         orientation: 'portrait-primary',
         icons: [
           {
