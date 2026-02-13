@@ -318,15 +318,27 @@ loadSavedData()
       </div>
     </div>
 
-    <div class="games">
-      <!-- Záhlaví s popisky -->
-      <div class="games-header">
-        <span>#</span>
-        <span>Opponent ELO</span>
-        <span>Result</span>
-        <span>Change</span>
-        <span></span>
+    <div class="games-section">
+      <div class="games-section-header">
+        <span class="games-title">Games</span>
+        <span
+          class="clear-link"
+          @click="clearAllGames()"
+          :class="{ disabled: games.length === 0 }"
+        >
+          Clear All
+        </span>
       </div>
+
+      <div class="games">
+        <!-- Záhlaví s popisky -->
+        <div class="games-header">
+          <span>#</span>
+          <span>Opponent ELO</span>
+          <span>Result</span>
+          <span>Change</span>
+          <span></span>
+        </div>
 
       <!-- Drop zone na začátku -->
       <div
@@ -378,11 +390,9 @@ loadSavedData()
           @drop="handleDropZoneDrop($event, index + 1)"
         ></div>
       </template>
-    </div>
+      </div>
 
-    <div class="action-buttons">
       <button id="addGameBtn" @click="addGame()">+ Add Game</button>
-      <button id="clearBtn" @click="clearAllGames()" :disabled="games.length === 0">Clear All</button>
     </div>
 
     <div class="footer">
@@ -485,32 +495,9 @@ button:active {
   transform: scale(0.98);
 }
 
-.action-buttons {
-  margin-top: 10px;
-  display: flex;
-  gap: 10px;
-}
-
 #addGameBtn {
-  flex: 1;
-}
-
-#clearBtn {
-  background: #f87171;
-  color: #000;
-  flex: 0 0 auto;
-  padding: 14px 20px;
-}
-
-#clearBtn:hover:not(:disabled) {
-  background: #fa8888;
-}
-
-#clearBtn:disabled {
-  background: #666;
-  color: #999;
-  cursor: not-allowed;
-  opacity: 0.5;
+  margin-top: 10px;
+  width: 100%;
 }
 
 .remove-btn {
@@ -573,8 +560,43 @@ button:active {
 }
 
 /* === HRY === */
-.games {
+.games-section {
   margin-top: 20px;
+}
+
+.games-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.games-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ccc;
+}
+
+.clear-link {
+  font-size: 13px;
+  color: #aaa;
+  cursor: pointer;
+  transition: color 0.2s;
+  user-select: none;
+}
+
+.clear-link:hover:not(.disabled) {
+  color: #f87171;
+}
+
+.clear-link.disabled {
+  color: #666;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.games {
+  margin-top: 0;
 }
 
 .games-header {
@@ -707,6 +729,11 @@ button:active {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.install-prompt {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
 .developer-display {
   text-align: center;
   font-size: 13px;
@@ -782,13 +809,16 @@ button:active {
     padding: 12px;
   }
 
-  .action-buttons {
-    flex-direction: column;
-    gap: 8px;
+  .games-section-header {
+    margin-bottom: 10px;
   }
 
-  #clearBtn {
-    flex: 1;
+  .games-title {
+    font-size: 15px;
+  }
+
+  .clear-link {
+    font-size: 12px;
   }
 }
 
@@ -800,6 +830,10 @@ button:active {
   h1 {
     font-size: 18px;
     padding: 10px;
+  }
+
+  .games-title {
+    font-size: 14px;
   }
 
   .games-header,
