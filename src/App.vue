@@ -136,16 +136,18 @@ function calculate() {
     kFactor.value = 15
   }
 
+  // Přepočítat změny pro všechny hry - vytvoříme nové pole, aby Vue detekoval změnu
   games.value = games.value.map(game => {
     // Validace game data
     const validRating = !isNaN(game.opponentRating) && game.opponentRating > 0 ? game.opponentRating : 2000
     const validResult = !isNaN(game.result) && game.result >= 0 && game.result <= 1 ? game.result : 1
+    const newChange = calculateGameChange(validRating, validResult)
 
     return {
-      ...game,
+      id: game.id,
       opponentRating: validRating,
       result: validResult,
-      change: calculateGameChange(validRating, validResult)
+      change: newChange
     }
   })
   autoSave()
