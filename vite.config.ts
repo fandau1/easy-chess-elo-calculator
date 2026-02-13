@@ -15,7 +15,7 @@ export default defineConfig({
     vueDevTools(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg', 'android-chrome-192x192.png', 'android-chrome-512x512.png'],
       manifest: {
         name: 'Chess ELO Calculator',
         short_name: 'Chess ELO',
@@ -26,22 +26,31 @@ export default defineConfig({
         scope: process.env.NODE_ENV === 'production' ? '/easy-chess-elo-calculator/' : '/',
         start_url: process.env.NODE_ENV === 'production' ? '/easy-chess-elo-calculator/' : '/',
         orientation: 'portrait-primary',
+        categories: ['games', 'utilities'],
         icons: [
           {
             src: 'android-chrome-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'android-chrome-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             src: 'android-chrome-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: 'android-chrome-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
+          },
+          {
+            src: 'apple-touch-icon.png',
+            sizes: '180x180',
+            type: 'image/png',
+            purpose: 'any'
           }
         ]
       },
