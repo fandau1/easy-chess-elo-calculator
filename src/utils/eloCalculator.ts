@@ -11,16 +11,18 @@ export interface EloCalculationResult {
   currentRating: number
 }
 
-/**
- * Vypočítá expected score pro jednu hru
- */
+
 function calculateExpectedScore(myRating: number, opponentRating: number): number {
-  return 1 / (1 + Math.pow(10, (opponentRating - myRating) / 400))
+  const ratingDifference = opponentRating - myRating
+  const exponent = ratingDifference / 400
+
+  const powerOfTen = Math.pow(10, exponent)
+  const expected = 1 / (1 + powerOfTen)
+
+  return expected
 }
 
-/**
- * Vypočítá změnu ELO pro jednu hru
- */
+
 function calculateSingleGameChange(
   myRating: number,
   opponentRating: number,
@@ -28,13 +30,13 @@ function calculateSingleGameChange(
   kFactor: number
 ): number {
   const expected = calculateExpectedScore(myRating, opponentRating)
-  return kFactor * (result - expected)
+  const change = kFactor * (result - expected)
+
+  // Zaokrouhlíme na 2 desetinná místa
+  return Math.round(change * 100) / 100
 }
 
-/**
- * Přepočítá všechny změny kumulativně
- * Každá hra ovlivňuje rating pro následující hru
- */
+
 export function recalculateAllGames(
   games: Game[],
   myRating: number,
@@ -74,9 +76,6 @@ export function recalculateAllGames(
   }
 }
 
-/**
- * Vypočítá změnu pro novou hru na základě všech předchozích her
- */
 export function calculateNewGameChange(
   games: Game[],
   myRating: number,
@@ -84,7 +83,6 @@ export function calculateNewGameChange(
   result: number,
   kFactor: number
 ): number {
-  // Vypočítat aktuální kumulativní rating
   let currentRating = myRating
   games.forEach(game => {
     currentRating += game.change
@@ -95,7 +93,7 @@ export function calculateNewGameChange(
 }
 
 /**
- * Vypočítá performance rating na základě výsledků
+ * Calculates the performance rating based on game results.
  */
 export function calculatePerformance(
   averageOpponentRating: number,
@@ -116,7 +114,7 @@ export function calculatePerformance(
 }
 
 /**
- * Validuje rating hodnotu
+ * Validates a rating value.
  */
 export function validateRating(rating: number, defaultValue = 2000): number {
   if (!rating || isNaN(rating) || rating < 0) {
@@ -128,7 +126,7 @@ export function validateRating(rating: number, defaultValue = 2000): number {
 }
 
 /**
- * Validuje K-Factor hodnotu
+ * Validates a K-Factor value.
  */
 export function validateKFactor(kFactor: number, defaultValue = 15): number {
   if (!kFactor || isNaN(kFactor) || kFactor <= 0) {
@@ -138,7 +136,7 @@ export function validateKFactor(kFactor: number, defaultValue = 15): number {
 }
 
 /**
- * Validuje result hodnotu
+ * Validates result value
  */
 export function validateResult(result: number): number {
   if ([0, 0.5, 1].includes(result)) {

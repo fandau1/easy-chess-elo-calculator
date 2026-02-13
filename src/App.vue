@@ -3,12 +3,8 @@ import { ref, computed } from 'vue'
 import ReloadPrompt from './components/ReloadPrompt.vue'
 import {
   type Game,
-  recalculateAllGames,
-  calculateNewGameChange,
   calculatePerformance,
   validateRating,
-  validateKFactor,
-  validateResult
 } from './utils/eloCalculator'
 
 interface SavedData {
@@ -79,31 +75,21 @@ const totalChange = computed(() => {
 })
 
 const performance = computed(() => {
-  if (games.value.length === 0) return 0
-
-  const percentage = totalPoints.value / games.value.length
-
-  if (percentage === 1) {
-    return average.value + 400
-  } else if (percentage === 0) {
-    return average.value - 400
-  } else {
-    return average.value + 400 * Math.log10(percentage / (1 - percentage))
-  }
+  return calculatePerformance(average.value, totalPoints.value, games.value.length)
 })
 
 function addGame(opponentRating = 2000, result = 1) {
-  // Validace vstupů
+  // Validate inputs
   const validRating = !isNaN(opponentRating) && opponentRating > 0 ? opponentRating : 2000
   const validResult = !isNaN(result) && result >= 0 && result <= 1 ? result : 1
 
-  // Vypočítat aktuální kumulativní rating (po všech předchozích hrách)
+  // Calculate current cumulative rating (after all previous games)
   let currentRating = myRating.value
   games.value.forEach(game => {
     currentRating += game.change
   })
 
-  // Vypočítat změnu pro novou hru na základě aktuálního ratingu
+  // Calculate change for new game based on current rating
   const expected = 1 / (1 + Math.pow(10, (validRating - currentRating) / 400))
   const change = kFactor.value * (validResult - expected)
 
@@ -118,33 +104,33 @@ function addGame(opponentRating = 2000, result = 1) {
 
 function removeGame(gameId: number) {
   games.value = games.value.filter(game => game.id !== gameId)
-  calculate() // Přepočítat všechny změny po odebrání hry
+  calculate() // Recalculate all changes after removing a game
 }
 
 function calculate() {
-  // Validace myRating
+  // Validate myRating
   if (!myRating.value || isNaN(myRating.value) || myRating.value < 0) {
     myRating.value = 1500
   }
 
-  // Validace kFactor
+  // Validate kFactor
   if (!kFactor.value || isNaN(kFactor.value) || kFactor.value <= 0) {
     kFactor.value = 15
   }
 
-  // Přepočítat změny KUMULATIVNĚ - každá hra ovlivňuje rating pro další hru
+  // Recalculate changes CUMULATIVELY - each game affects the rating for the next game
   let currentRating = myRating.value
 
   games.value = games.value.map(game => {
-    // Validace game data
+    // Validate game data
     const validRating = !isNaN(game.opponentRating) && game.opponentRating > 0 ? game.opponentRating : 2000
     const validResult = !isNaN(game.result) && game.result >= 0 && game.result <= 1 ? game.result : 1
 
-    // Vypočítat expected score na základě AKTUÁLNÍHO ratingu (po předchozích hrách)
+    // Calculate expected score based on CURRENT rating (after previous games)
     const expected = 1 / (1 + Math.pow(10, (validRating - currentRating) / 400))
     const newChange = kFactor.value * (validResult - expected)
 
-    // Aktualizovat rating pro další hru
+    // Update rating for next game
     currentRating += newChange
 
     return {
@@ -375,7 +361,7 @@ loadSavedData()
       </div>
 
       <div class="games">
-        <!-- Záhlaví s popisky -->
+        <!-- Header with labels -->
         <div class="games-header">
           <span>#</span>
           <span>Opponent ELO</span>
@@ -455,7 +441,7 @@ h1 {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* === FORMULÁŘOVÉ PRVKY === */
+/* === Forms === */
 .rating-input {
   display: flex;
   align-items: center;
@@ -502,7 +488,7 @@ h1 {
   box-sizing: border-box;
 }
 
-/* === TLAČÍTKA === */
+/* === Buttons === */
 button {
   padding: 14px;
   font-size: 16px;
@@ -541,7 +527,7 @@ button:active {
   background: #888;
 }
 
-/* === STATISTIKY === */
+/* === Stats === */
 .stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -734,7 +720,7 @@ button:active {
 }
 
 
-/* === PATIČKA === */
+/* === Footer === */
 .footer {
   margin-top: 20px;
   padding-top: 15px;
@@ -753,7 +739,7 @@ button:active {
   padding: 8px;
 }
 
-/* === RESPONZIVNÍ DESIGN === */
+/* === Responsive design === */
 @media (max-width: 480px) {
   .container {
     padding: 15px;
