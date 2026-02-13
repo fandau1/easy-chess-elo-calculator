@@ -247,6 +247,22 @@ function validateMyRating() {
   calculate()
 }
 
+function clearAllGames() {
+  if (games.value.length === 0) {
+    return
+  }
+
+  const confirmed = confirm(
+    `Do you really want to delete all games (${games.value.length})?\n\nThis action cannot be revert.`
+  )
+
+  if (confirmed) {
+    games.value = []
+    gameCounter = 1
+    autoSave()
+  }
+}
+
 // Načíst uložená data při startu aplikace
 loadSavedData()
 
@@ -364,7 +380,10 @@ loadSavedData()
       </template>
     </div>
 
-    <button id="addGameBtn" @click="addGame()">+ Add Game</button>
+    <div class="action-buttons">
+      <button id="addGameBtn" @click="addGame()">+ Add Game</button>
+      <button id="clearBtn" @click="clearAllGames()" :disabled="games.length === 0">Clear All</button>
+    </div>
 
     <div class="footer">
       <div class="developer-display">
@@ -669,9 +688,32 @@ button:active {
   background: #888;
 }
 
-#addGameBtn {
+.action-buttons {
   margin-top: 10px;
-  width: 100%;
+  display: flex;
+  gap: 10px;
+}
+
+#addGameBtn {
+  flex: 1;
+}
+
+#clearBtn {
+  background: #f87171;
+  color: #000;
+  flex: 0 0 auto;
+  padding: 14px 20px;
+}
+
+#clearBtn:hover:not(:disabled) {
+  background: #fa8888;
+}
+
+#clearBtn:disabled {
+  background: #666;
+  color: #999;
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .footer {
@@ -763,6 +805,15 @@ button:active {
 
   button {
     padding: 12px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #clearBtn {
+    flex: 1;
   }
 }
 
