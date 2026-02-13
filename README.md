@@ -6,7 +6,7 @@ The app is a fully offline-capable Progressive Web App (PWA), built with Vue.js 
 
 ## Features
 
-~~- **Cumulative ELO Calculation**: Each game's result affects the rating for the next game in the series.
+- **Cumulative ELO Calculation**: Each game's result affects the rating for the next game in the series.
 - **Dynamic K-Factor**: Easily switch between different K-factors (10, 15, 20, 25, 30, 40).
 - **Performance Statistics**: Automatically calculates your performance rating, total points, and average opponent rating.
 - **Drag & Drop Reordering**: Intuitively reorder games to see how the sequence affects the outcome.
