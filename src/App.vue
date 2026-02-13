@@ -20,6 +20,48 @@ const kFactor = ref(15)
 const games = ref<Game[]>([])
 let gameCounter = 1
 
+// Načíst uložená data při startu
+function loadSavedData() {
+  const savedData = localStorage.getItem('chessEloData')
+  if (savedData) {
+    try {
+      const data: SavedData = JSON.parse(savedData)
+      myRating.value = data.myRating
+      kFactor.value = data.kFactor
+
+      games.value = []
+      gameCounter = 1
+
+      data.games.forEach(game => {
+        addGame(game.opponentRating, game.result)
+      })
+    } catch (error) {
+      console.error('Failed to load saved data:', error)
+    }
+  } else {
+    // Pokud nejsou uložená data, načíst vzorové hry
+    addGame(2245, 1)
+    addGame(2458, 0.5)
+    addGame(2650, 0)
+    addGame(2178, 1)
+    addGame(2578, 0)
+    addGame(2456, 1)
+  }
+}
+
+// Automaticky uložit data
+function autoSave() {
+  const data: SavedData = {
+    myRating: myRating.value,
+    kFactor: kFactor.value,
+    games: games.value.map(game => ({
+      opponentRating: game.opponentRating,
+      result: game.result
+    }))
+  }
+  localStorage.setItem('chessEloData', JSON.stringify(data))
+}
+
 const average = computed(() => {
   if (games.value.length === 0) return 0
   const total = games.value.reduce((sum, game) => sum + game.opponentRating, 0)
@@ -49,64 +91,64 @@ const performance = computed(() => {
 })
 
 function calculateGameChange(opponentRating: number, result: number): number {
+  // Validace opponent rating
+  if (!opponentRating || isNaN(opponentRating) || opponentRating < 0) {
+    return 0
+  }
+
+  // Validace result
+  if (isNaN(result) || result < 0 || result > 1) {
+    return 0
+  }
+
   const expected = 1 / (1 + Math.pow(10, (opponentRating - myRating.value) / 400))
   return kFactor.value * (result - expected)
 }
 
 function addGame(opponentRating = 2000, result = 1) {
-  const change = calculateGameChange(opponentRating, result)
+  // Validace vstupů
+  const validRating = !isNaN(opponentRating) && opponentRating > 0 ? opponentRating : 2000
+  const validResult = !isNaN(result) && result >= 0 && result <= 1 ? result : 1
+
+  const change = calculateGameChange(validRating, validResult)
   games.value.push({
     id: gameCounter++,
-    opponentRating,
-    result,
+    opponentRating: validRating,
+    result: validResult,
     change
   })
+  autoSave()
 }
 
 function removeGame(gameId: number) {
   games.value = games.value.filter(game => game.id !== gameId)
+  autoSave()
 }
 
 function calculate() {
-  games.value = games.value.map(game => ({
-    ...game,
-    change: calculateGameChange(game.opponentRating, game.result)
-  }))
-}
-
-function saveData() {
-  const data: SavedData = {
-    myRating: myRating.value,
-    kFactor: kFactor.value,
-    games: games.value.map(game => ({
-      opponentRating: game.opponentRating,
-      result: game.result
-    }))
+  // Validace myRating
+  if (!myRating.value || isNaN(myRating.value) || myRating.value < 0) {
+    myRating.value = 1500
   }
 
-  localStorage.setItem('chessEloData', JSON.stringify(data))
-  alert('Data saved!')
-}
-
-function loadData() {
-  const savedData = localStorage.getItem('chessEloData')
-  if (!savedData) {
-    alert('No saved data found!')
-    return
+  // Validace kFactor
+  if (!kFactor.value || isNaN(kFactor.value) || kFactor.value <= 0) {
+    kFactor.value = 15
   }
 
-  const data: SavedData = JSON.parse(savedData)
-  myRating.value = data.myRating
-  kFactor.value = data.kFactor
+  games.value = games.value.map(game => {
+    // Validace game data
+    const validRating = !isNaN(game.opponentRating) && game.opponentRating > 0 ? game.opponentRating : 2000
+    const validResult = !isNaN(game.result) && game.result >= 0 && game.result <= 1 ? game.result : 1
 
-  games.value = []
-  gameCounter = 1
-
-  data.games.forEach(game => {
-    addGame(game.opponentRating, game.result)
+    return {
+      ...game,
+      opponentRating: validRating,
+      result: validResult,
+      change: calculateGameChange(validRating, validResult)
+    }
   })
-
-  alert('Data loaded!')
+  autoSave()
 }
 
 // Drag and drop functionality
@@ -174,31 +216,38 @@ function handleDropZoneDrop(event: DragEvent, targetIndex: number) {
   games.value.splice(newIndex, 0, draggedGame)
 
   draggedIndex = -1
+  autoSave()
 }
 
-function showKFactorHelp() {
-  const helpText = `K-Factor Information:
+// Validace input hodnot
+function validateGameInput(game: Game) {
+  // Pokud je opponent rating prázdný nebo neplatný, nastavit výchozí hodnotu
+  if (!game.opponentRating || isNaN(game.opponentRating) || game.opponentRating < 0) {
+    game.opponentRating = 2000
+  }
 
-K-10 (2400+): For players rated 2400+ - Minimal rating changes
-K-15 (FIDE Standard): Standard FIDE rating - Balanced changes
-K-20 (Under 2400): For players under 2400 - Moderate volatility
-K-25: Medium volatility
-K-30 (Rapid/Blitz): For fast games - Higher volatility
-K-40 (Juniors/Beginners): For new players - Maximum rating movement
+  // Omezit opponent rating na rozumný rozsah (100-4000)
+  if (game.opponentRating < 100) game.opponentRating = 100
+  if (game.opponentRating > 4000) game.opponentRating = 4000
 
-Higher K = bigger rating changes per game
-Lower K = more stable rating`
-
-  alert(helpText)
+  // Zajistit že result je platná hodnota (0, 0.5, nebo 1)
+  if (![0, 0.5, 1].includes(game.result)) {
+    game.result = 1
+  }
 }
 
-// Initialize with sample games
-addGame(2245, 1)
-addGame(2458, 0.5)
-addGame(2650, 0)
-addGame(2178, 1)
-addGame(2578, 0)
-addGame(2456, 1)
+function validateMyRating() {
+  if (!myRating.value || isNaN(myRating.value) || myRating.value < 0) {
+    myRating.value = 1500
+  }
+  if (myRating.value < 100) myRating.value = 100
+  if (myRating.value > 4000) myRating.value = 4000
+  calculate()
+}
+
+// Načíst uložená data při startu aplikace
+loadSavedData()
+
 </script>
 
 <template>
@@ -209,25 +258,27 @@ addGame(2456, 1)
     <div class="rating-input">
       <div class="rating-group">
         <label>My Rating:</label>
-        <input type="number" v-model.number="myRating" @change="calculate">
+        <input
+          type="number"
+          v-model.number="myRating"
+          @change="calculate"
+          @blur="validateMyRating"
+          min="100"
+          max="4000"
+          step="1"
+        >
       </div>
       <div class="k-factor-group">
         <label>K-Factor:</label>
         <select v-model.number="kFactor" @change="calculate">
-          <option :value="10">K-10 (2400+)</option>
-          <option :value="15">K-15 (FIDE Standard)</option>
-          <option :value="20">K-20 (Under 2400)</option>
+          <option :value="10">K-10</option>
+          <option :value="15">K-15</option>
+          <option :value="20">K-20</option>
           <option :value="25">K-25</option>
-          <option :value="30">K-30 (Rapid/Blitz)</option>
-          <option :value="40">K-40 (Juniors/Beginners)</option>
+          <option :value="30">K-30</option>
+          <option :value="40">K-40</option>
         </select>
-        <span class="k-factor-info" @click="showKFactorHelp">ⓘ</span>
       </div>
-    </div>
-
-    <div class="buttons">
-      <button @click="saveData">Save</button>
-      <button @click="loadData">Load</button>
     </div>
 
     <div class="stats">
@@ -280,6 +331,10 @@ addGame(2456, 1)
             type="number"
             v-model.number="game.opponentRating"
             @change="calculate"
+            @blur="validateGameInput(game); calculate()"
+            min="100"
+            max="4000"
+            step="1"
             class="opponent-rating"
           >
           <select v-model.number="game.result" @change="calculate" class="game-result">
@@ -391,24 +446,6 @@ h1 {
   box-sizing: border-box;
 }
 
-.k-factor-info {
-  font-size: 18px;
-  color: #4ade80;
-  cursor: pointer;
-  user-select: none;
-  transition: color 0.3s;
-}
-
-.k-factor-info:hover {
-  color: #22c55e;
-}
-
-.buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 20px;
-}
 
 button {
   padding: 14px;
@@ -656,9 +693,6 @@ button:active {
     padding: 10px 12px;
   }
 
-  .k-factor-info {
-    font-size: 16px;
-  }
 
   .stats {
     grid-template-columns: 1fr;
