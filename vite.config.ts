@@ -15,7 +15,7 @@ export default defineConfig({
     vueDevTools(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.ico'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg'],
       manifest: {
         name: 'Chess ELO Calculator',
         short_name: 'Chess ELO',
@@ -28,17 +28,17 @@ export default defineConfig({
         orientation: 'portrait-primary',
         icons: [
           {
-            src: '/icon-192x192.png',
+            src: 'android-chrome-192x192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: '/icon-512x512.png',
+            src: 'android-chrome-512x512.png',
             sizes: '512x512',
             type: 'image/png'
           },
           {
-            src: '/icon-512x512.png',
+            src: 'android-chrome-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
