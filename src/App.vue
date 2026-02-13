@@ -153,71 +153,112 @@ function calculate() {
   autoSave()
 }
 
-// Drag and drop functionality
+// Drag & drop – smooth reorder
 let draggedIndex = -1
+let draggedElement: HTMLElement | null = null
 
 function handleDragStart(event: DragEvent, index: number) {
   draggedIndex = index
-  const target = event.target as HTMLElement
-  target.classList.add('dragging')
+  draggedElement = event.currentTarget as HTMLElement
+
+  // Přidáme třídu až po vytvoření ghost image pro plynulejší start
+  requestAnimationFrame(() => {
+    if (draggedElement) {
+      draggedElement.classList.add('dragging')
+    }
+  })
 
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = 'move'
+    // Přidáme data pro případné použití v jiných kontextech
+    event.dataTransfer.setData('text/plain', String(index))
   }
 }
 
-function handleDragEnd(event: DragEvent) {
-  const target = event.target as HTMLElement
-  target.classList.remove('dragging')
+function handleDragEnd() {
+  if (draggedElement) {
+    draggedElement.classList.remove('dragging', 'drop-before', 'drop-after')
+  }
 
-  // Odstranit všechny drop-zone třídy
-  document.querySelectorAll('.drop-zone-active').forEach(el => {
-    el.classList.remove('drop-zone-active')
+  // Bezpečné odstranění všech dočasných tříd z celého dokumentu
+  document.querySelectorAll('.game-row').forEach(el => {
+    el.classList.remove('drop-before', 'drop-after')
   })
 
   draggedIndex = -1
+  draggedElement = null
 }
 
-function handleDropZoneOver(event: DragEvent) {
+function handleDragOver(event: DragEvent) {
   event.preventDefault()
+  const targetRow = (event.currentTarget as HTMLElement).closest('.game-row')
+  if (!targetRow || targetRow === draggedElement) {
+    return
+  }
+
+  const rect = targetRow.getBoundingClientRect()
+  const isAfter = event.clientY > rect.top + rect.height / 2
+
+  document.querySelectorAll('.drop-before, .drop-after').forEach(el => {
+    el.classList.remove('drop-before', 'drop-after')
+  })
+
+  if (isAfter) {
+    targetRow.classList.add('drop-after')
+  } else {
+    targetRow.classList.add('drop-before')
+  }
+
   if (event.dataTransfer) {
     event.dataTransfer.dropEffect = 'move'
   }
 }
 
-function handleDropZoneEnter(event: DragEvent) {
-  if (draggedIndex === -1) return
-  const target = event.currentTarget as HTMLElement
-  target.classList.add('drop-zone-active')
+function handleDragLeave(event: DragEvent) {
+    const targetRow = (event.currentTarget as HTMLElement).closest('.game-row');
+    if (targetRow) {
+        const rect = targetRow.getBoundingClientRect();
+        const { clientX: x, clientY: y } = event;
+        if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
+            targetRow.classList.remove('drop-before', 'drop-after');
+        }
+    }
 }
 
-function handleDropZoneLeave(event: DragEvent) {
-  const target = event.currentTarget as HTMLElement
-  target.classList.remove('drop-zone-active')
-}
-
-function handleDropZoneDrop(event: DragEvent, targetIndex: number) {
+function handleDrop(event: DragEvent, targetIndex: number) {
   event.preventDefault()
-  const target = event.currentTarget as HTMLElement
-  target.classList.remove('drop-zone-active')
+  const targetRow = (event.currentTarget as HTMLElement).closest('.game-row')
+  if (!targetRow) return
 
   if (draggedIndex === -1) return
 
-  const draggedGame = games.value[draggedIndex]
-  if (!draggedGame) return
+  const fromIndex = draggedIndex
+  const isAfter = event.clientY > targetRow.getBoundingClientRect().top + targetRow.getBoundingClientRect().height / 2
 
-  // Vypočítat správný cílový index
-  let newIndex = targetIndex
-  if (draggedIndex < targetIndex) {
-    newIndex = targetIndex - 1
+  let toIndex = targetIndex
+  if (isAfter) {
+    toIndex = targetIndex + 1
   }
 
-  if (draggedIndex === newIndex) return
+  if (fromIndex < toIndex) {
+    toIndex--
+  }
 
-  games.value.splice(draggedIndex, 1)
-  games.value.splice(newIndex, 0, draggedGame)
+  if (fromIndex === toIndex) {
+    // I když se pozice nemění, je třeba uklidit třídy
+    document.querySelectorAll('.game-row').forEach(el => {
+      el.classList.remove('drop-before', 'drop-after')
+    })
+    return
+  }
 
-  draggedIndex = -1
+  const list = [...games.value]
+  const [draggedItem] = list.splice(fromIndex, 1)
+  list.splice(toIndex, 0, draggedItem)
+
+  games.value = list
+
+  // Reset stavu se provede v handleDragEnd, které se volá automaticky po dropu
   autoSave()
 }
 
@@ -340,21 +381,15 @@ loadSavedData()
           <span></span>
         </div>
 
-      <!-- Drop zone na začátku -->
-      <div
-        class="drop-zone"
-        @dragover="handleDropZoneOver"
-        @dragenter="handleDropZoneEnter"
-        @dragleave="handleDropZoneLeave"
-        @drop="handleDropZoneDrop($event, 0)"
-      ></div>
-
       <template v-for="(game, index) in games" :key="game.id">
         <div
           class="game-row"
           draggable="true"
           @dragstart="handleDragStart($event, index)"
           @dragend="handleDragEnd"
+          @dragover="handleDragOver"
+          @dragleave="handleDragLeave"
+          @drop="handleDrop($event, index)"
         >
           <label class="game-number">{{ index + 1 }}</label>
           <input
@@ -380,15 +415,6 @@ loadSavedData()
           </span>
           <button class="remove-btn" @click="removeGame(game.id)">-</button>
         </div>
-
-        <!-- Drop zone mezi položkami -->
-        <div
-          class="drop-zone"
-          @dragover="handleDropZoneOver"
-          @dragenter="handleDropZoneEnter"
-          @dragleave="handleDropZoneLeave"
-          @drop="handleDropZoneDrop($event, index + 1)"
-        ></div>
       </template>
       </div>
 
@@ -642,10 +668,23 @@ button:active {
 }
 
 .game-row.dragging {
-  opacity: 0.4;
+  opacity: 0.5;
   cursor: grabbing;
-  transform: scale(0.98);
+  transform: scale(1.02);
   background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.game-row.drop-before {
+  border-top: 2px solid #4ade80;
+  padding-top: 10px;
+  margin-top: -2px;
+}
+
+.game-row.drop-after {
+  border-bottom: 2px solid #4ade80;
+  padding-bottom: 10px;
+  margin-bottom: -2px;
 }
 
 .game-row label {
@@ -691,36 +730,6 @@ button:active {
   white-space: nowrap;
 }
 
-/* === DRAG AND DROP === */
-.drop-zone {
-  height: 8px;
-  margin: 0;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.drop-zone::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 2px;
-  background: transparent;
-  transition: all 0.2s ease;
-}
-
-.drop-zone.drop-zone-active {
-  height: 40px;
-  margin: 5px 0;
-}
-
-.drop-zone.drop-zone-active::before {
-  height: 4px;
-  background: #4ade80;
-  box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
-}
 
 /* === PATIČKA === */
 .footer {
