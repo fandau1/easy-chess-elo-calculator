@@ -1,0 +1,74 @@
+{
+  "app": {
+    "title": "Šachová ELO Kalkulačka"
+  },
+  "header": {
+    "title": "Šachová ELO Kalkulačka"
+  },
+  "settings": {
+    "myRating": "Moje Hodnocení ELO",
+    "kFactor": "K-Faktor",
+    "kFactorInfo": "K-faktor určuje, jak moc se vaše hodnocení změní po každé hře. Typické hodnoty:",
+    "kFactorValues": {
+      "beginner": "Začátečníci / rychle se zlepšující hráči: 40",
+      "intermediate": "Průměrní hráči: 20",
+      "advanced": "Pokročilí hráči (>2400): 10-15"
+    }
+  },
+  "game": {
+    "opponent": "Soupeř",
+    "result": "Výsledek",
+    "change": "Změna",
+    "win": "Výhra",
+    "draw": "Remíza",
+    "loss": "Prohra",
+    "opponentRating": "Hodnocení Soupeře",
+    "gameResult": "Výsledek Hry",
+    "addGame": "Přidat Hru",
+    "deleteGame": "Smazat",
+    "noGames": "Zatím žádné hry. Přidejte svou první hru!"
+  },
+  "summary": {
+    "title": "Souhrn",
+    "averageOpponent": "Průměrné Hodnocení Soupeře",
+    "totalPoints": "Celkový Počet Bodů",
+    "totalGames": "Všechny Hry",
+    "currentRating": "Současné Hodnocení (ELO)",
+    "totalChange": "Celková Změna (ELO)",
+    "newRating": "Nové Hodnocení (ELO)"
+  },
+  "actions": {
+    "reset": "Resetovat Vše",
+    "confirmReset": "Opravdu chcete resetovat všechna data?",
+    "save": "Uložit",
+    "cancel": "Zrušit",
+    "close": "Zavřít",
+    "clearAll": "Vymazat Vše"
+  },
+  "language": {
+    "select": "Jazyk",
+    "en": "English",
+    "cs": "Čeština"
+  },
+  "info": {
+    "about": "O Aplikaci",
+    "description": "Tato kalkulačka vám pomůže sledovat a vypočítat změny vašeho šachového hodnocení na základě Elo ratingu.",
+    "howToUse": "Jak Použít",
+    "step1": "Zadejte své současné hodnocení a K-faktor",
+    "step2": "Přidejte hry s hodnocením soupeřů a výsledky",
+    "step3": "Prohlédněte si změnu hodnocení a výkonnostní rating",
+    "eloSystem": "Systém Elo Ratingu",
+    "eloDescription": "Systém Elo ratingu je metoda pro výpočet relativní úrovně dovedností hráčů. Vyšší hodnocení znamená silnějšího hráče."
+  },
+  "validation": {
+    "invalidRating": "Prosím zadejte platné hodnocení (100-3000)",
+    "invalidKFactor": "Prosím zadejte platný K-faktor (1-100)",
+    "invalidResult": "Výsledek musí být 0 (prohra), 0.5 (remíza), nebo 1 (výhra)"
+  },
+  "storage": {
+    "saved": "Data úspěšně uložena",
+    "loaded": "Data úspěšně načtena",
+    "cleared": "Všechna data vymazána"
+  }
+}
+

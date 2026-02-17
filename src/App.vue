@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ReloadPrompt from './components/ReloadPrompt.vue'
+import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import {
   type Game,
-  calculatePerformance,
   validateRating,
 } from './utils/eloCalculator'
+
+const { t } = useI18n()
 
 interface SavedData {
   myRating: number
@@ -74,8 +77,8 @@ const totalChange = computed(() => {
   return games.value.reduce((sum, game) => sum + game.change, 0)
 })
 
-const performance = computed(() => {
-  return calculatePerformance(average.value, totalPoints.value, games.value.length)
+const newRating = computed(() => {
+  return myRating.value + totalChange.value
 })
 
 function addGame(opponentRating = 2000, result = 1) {
@@ -282,9 +285,7 @@ function clearAllGames() {
     return
   }
 
-  const confirmed = confirm(
-    `Do you really want to delete all games (${games.value.length})?\n\nThis action cannot be revert.`
-  )
+  const confirmed = confirm(t('actions.confirmReset'))
 
   if (confirmed) {
     games.value = []
@@ -301,11 +302,11 @@ loadSavedData()
 <template>
   <ReloadPrompt />
   <div class="container">
-    <h1>♟ Chess ELO Calculator</h1>
+    <h1>{{ t('header.title') }}</h1>
 
     <div class="rating-input">
       <div class="rating-group">
-        <label>My Rating:</label>
+        <label>{{ t('settings.myRating') }}:</label>
         <input
           type="number"
           v-model.number="myRating"
@@ -317,7 +318,7 @@ loadSavedData()
         >
       </div>
       <div class="k-factor-group">
-        <label>K-Factor:</label>
+        <label>{{ t('settings.kFactor') }}:</label>
         <select v-model.number="kFactor" @change="calculate">
           <option :value="10">K-10</option>
           <option :value="15">K-15</option>
@@ -331,32 +332,32 @@ loadSavedData()
 
     <div class="stats">
       <div class="stat-item">
-        <div class="stat-label">Average:</div>
+        <div class="stat-label">{{ t('summary.averageOpponent') }}:</div>
         <div class="stat-value" :class="average > myRating ? 'positive' : average < myRating ? 'negative' : ''">{{ average.toFixed(1) }}</div>
       </div>
       <div class="stat-item" :class="totalChange > 0 ? 'stat-positive' : totalChange < 0 ? 'stat-negative' : ''">
-        <div class="stat-label">Change:</div>
+        <div class="stat-label">{{ t('summary.totalChange') }}:</div>
         <div class="stat-value" :class="totalChange > 0 ? 'positive' : totalChange < 0 ? 'negative' : ''">{{ (totalChange >= 0 ? '+ ' : '') + totalChange.toFixed(1) }}</div>
       </div>
-      <div class="stat-item" :class="performance > myRating ? 'stat-positive' : performance < myRating ? 'stat-negative' : ''">
-        <div class="stat-label">Performance:</div>
-        <div class="stat-value" :class="performance > myRating ? 'positive' : performance < myRating ? 'negative' : ''">{{ performance.toFixed(1) }}</div>
+      <div class="stat-item" :class="newRating > myRating ? 'stat-positive' : newRating < myRating ? 'stat-negative' : ''">
+        <div class="stat-label">{{ t('summary.newRating') }}:</div>
+        <div class="stat-value" :class="newRating > myRating ? 'positive' : newRating < myRating ? 'negative' : ''">{{ newRating.toFixed(1) }}</div>
       </div>
       <div class="stat-item">
-        <div class="stat-label">Points:</div>
+        <div class="stat-label">{{ t('summary.totalPoints') }}:</div>
         <div class="stat-value">{{ totalPoints.toFixed(1) }} / {{ games.length }}</div>
       </div>
     </div>
 
     <div class="games-section">
       <div class="games-section-header">
-        <span class="games-title">Games</span>
+        <span class="games-title">{{ t('summary.totalGames') }}</span>
         <span
           class="clear-link"
           @click="clearAllGames()"
           :class="{ disabled: games.length === 0 }"
         >
-          Clear All
+          {{ t('actions.clearAll') }}
         </span>
       </div>
 
@@ -364,9 +365,9 @@ loadSavedData()
         <!-- Header with labels -->
         <div class="games-header">
           <span>#</span>
-          <span>Opponent ELO</span>
-          <span>Result</span>
-          <span>Change</span>
+          <span>{{ t('game.opponentRating') }}</span>
+          <span>{{ t('game.result') }}</span>
+          <span>{{ t('game.change') }}</span>
           <span></span>
         </div>
 
@@ -407,10 +408,14 @@ loadSavedData()
       </template>
       </div>
 
-      <button id="addGameBtn" @click="addGame()">+ Add Game</button>
+      <button id="addGameBtn" @click="addGame()">{{ t('game.addGame') }}</button>
     </div>
 
     <div class="footer">
+      <div class="language-display">
+        <LanguageSwitcher />
+      </div>
+
       <div class="developer-display">
         Made by František Urban
       </div>
@@ -431,11 +436,18 @@ loadSavedData()
   box-sizing: border-box;
 }
 
+.header-with-language {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
 h1 {
   background: #2a2a2a;
   padding: 16px;
   border-radius: 5px;
-  margin-bottom: 20px;
+  margin: 0;
   text-align: center;
   font-size: 24px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -457,6 +469,7 @@ h1 {
   flex-direction: column;
   align-items: stretch;
   gap: 5px;
+  margin-top: 10px;
 }
 
 .rating-group label,
@@ -737,6 +750,13 @@ button:active {
   font-size: 13px;
   color: #aaa;
   padding: 8px;
+}
+
+.language-display {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
 }
 
 /* === Responsive design === */

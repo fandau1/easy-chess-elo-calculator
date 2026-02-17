@@ -124,23 +124,3 @@ export function validateRating(rating: number, defaultValue = 2000): number {
   if (rating > 4000) return 4000
   return rating
 }
-
-/**
- * Validates a K-Factor value.
- */
-export function validateKFactor(kFactor: number, defaultValue = 15): number {
-  if (!kFactor || isNaN(kFactor) || kFactor <= 0) {
-    return defaultValue
-  }
-  return kFactor
-}
-
-/**
- * Validates result value
- */
-export function validateResult(result: number): number {
-  if ([0, 0.5, 1].includes(result)) {
-    return result
-  }
-  return 1
-}

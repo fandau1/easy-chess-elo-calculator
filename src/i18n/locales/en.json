@@ -1,0 +1,74 @@
+{
+  "app": {
+    "title": "Chess Elo Calculator"
+  },
+  "header": {
+    "title": "Chess Elo Calculator"
+  },
+  "settings": {
+    "myRating": "My Rating (ELO)",
+    "kFactor": "K-Factor",
+    "kFactorInfo": "The K-factor determines how much your rating changes per game. Typical values:",
+    "kFactorValues": {
+      "beginner": "Beginners / rapidly improving players: 40",
+      "intermediate": "Intermediate players: 20",
+      "advanced": "Advanced players (>2400): 10-15"
+    }
+  },
+  "game": {
+    "opponent": "Opponent",
+    "result": "Result",
+    "change": "Change",
+    "win": "Win",
+    "draw": "Draw",
+    "loss": "Loss",
+    "opponentRating": "Opponent Rating",
+    "gameResult": "Game Result",
+    "addGame": "Add Game",
+    "deleteGame": "Delete",
+    "noGames": "No games yet. Add your first game!"
+  },
+  "summary": {
+    "title": "Summary",
+    "averageOpponent": "Average Opponent Rating",
+    "totalPoints": "Total Points",
+    "totalGames": "Total Games",
+    "currentRating": "Current Rating (ELO)",
+    "totalChange": "Total Change (ELO)",
+    "newRating": "New Rating (ELO)"
+  },
+  "actions": {
+    "reset": "Reset All",
+    "confirmReset": "Are you sure you want to reset all data?",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "clearAll": "Clear All"
+  },
+  "language": {
+    "select": "Language",
+    "en": "English",
+    "cs": "Čeština"
+  },
+  "info": {
+    "about": "About",
+    "description": "This calculator helps you track and calculate your chess rating changes based on the Elo rating system.",
+    "howToUse": "How to Use",
+    "step1": "Enter your current rating and K-factor",
+    "step2": "Add games with opponent ratings and results",
+    "step3": "See your rating change and performance rating",
+    "eloSystem": "Elo Rating System",
+    "eloDescription": "The Elo rating system is a method for calculating the relative skill levels of players. A higher rating indicates a stronger player."
+  },
+  "validation": {
+    "invalidRating": "Please enter a valid rating (100-3000)",
+    "invalidKFactor": "Please enter a valid K-factor (1-100)",
+    "invalidResult": "Result must be 0 (loss), 0.5 (draw), or 1 (win)"
+  },
+  "storage": {
+    "saved": "Data saved successfully",
+    "loaded": "Data loaded successfully",
+    "cleared": "All data cleared"
+  }
+}
+
