@@ -4,11 +4,17 @@ import { useI18n } from 'vue-i18n'
 import ReloadPrompt from './components/ReloadPrompt.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import {
-  type Game,
-  validateRating,
+  calculateMyRatingNewRating
 } from './utils/eloCalculator'
 
 const { t } = useI18n()
+
+interface Game {
+  id: number
+  opponentRating?: number
+  result: number
+  change?: number
+}
 
 interface SavedData {
   myRating: number
@@ -16,7 +22,7 @@ interface SavedData {
   games: Array<{ opponentRating: number; result: number }>
 }
 
-const myRating = ref(2350)
+const myRating = ref<number | undefined>(2350)
 const kFactor = ref(15)
 const games = ref<Game[]>([])
 let gameCounter = 1
@@ -63,45 +69,48 @@ function autoSave() {
   localStorage.setItem('chessEloData', JSON.stringify(data))
 }
 
-const average = computed(() => {
-  if (games.value.length === 0) return 0
-  const total = games.value.reduce((sum, game) => sum + game.opponentRating, 0)
-  return total / games.value.length
+const isGameValid = (game: Game) => {
+  return game.opponentRating !== undefined && !isNaN(game.opponentRating) && game.result !== undefined && !isNaN(game.result)
+}
+
+const averageOpponentRating = computed(() => {
+  const validGames = games.value.filter(game => isGameValid(game))
+  if (validGames.length === 0) return 0
+  const total = validGames.reduce((sum, game) => sum + game.opponentRating!, 0)
+  return total / validGames.length
 })
 
 const totalPoints = computed(() => {
-  return games.value.reduce((sum, game) => sum + game.result, 0)
+  return games.value.reduce((sum, game) => {
+    return sum + (isGameValid(game) ? game.result : 0)
+  }, 0)
+})
+
+const totalValidGames = computed(() => {
+  return games.value.filter(game => isGameValid(game)).length
 })
 
 const totalChange = computed(() => {
-  return games.value.reduce((sum, game) => sum + game.change, 0)
+  if(myRating.value === undefined || isNaN(myRating.value)) return undefined
+
+  return games.value.reduce((sum, game) => sum + (game.change ?? 0), 0)
 })
 
 const newRating = computed(() => {
-  return myRating.value + totalChange.value
+  if (myRating.value === undefined || isNaN(myRating.value)) return undefined
+  const total = totalChange.value
+  if (total === undefined || isNaN(total)) return undefined
+  return myRating.value + total
 })
 
-function addGame(opponentRating = 2000, result = 1) {
-  // Validate inputs
-  const validRating = !isNaN(opponentRating) && opponentRating > 0 ? opponentRating : 2000
-  const validResult = !isNaN(result) && result >= 0 && result <= 1 ? result : 1
-
-  // Calculate current cumulative rating (after all previous games)
-  let currentRating = myRating.value
-  games.value.forEach(game => {
-    currentRating += game.change
-  })
-
-  // Calculate change for new game based on current rating
-  const expected = 1 / (1 + Math.pow(10, (validRating - currentRating) / 400))
-  const change = kFactor.value * (validResult - expected)
+function addGame(opponentRating: number | null = null, gameResult = 1) {
 
   games.value.push({
     id: gameCounter++,
-    opponentRating: validRating,
-    result: validResult,
-    change
+    opponentRating: opponentRating,
+    result: gameResult
   })
+  calculate()
   autoSave()
 }
 
@@ -112,37 +121,42 @@ function removeGame(gameId: number) {
 
 function calculate() {
   // Validate myRating
-  if (!myRating.value || isNaN(myRating.value) || myRating.value < 0) {
-    myRating.value = 1500
+  // Skip calculation if myRating is not set
+  if (myRating.value === undefined || isNaN(myRating.value)) {
+    games.value = games.value.map(game => ({
+      ...game,
+      change: undefined
+    }))
+  } else {
+    // Recalculate changes CUMULATIVELY - each game affects the rating for the next game
+    let currentRating = myRating.value
+    games.value = games.value.map(game => {
+
+      if(!game.opponentRating || isNaN(game.opponentRating) || !game.result) {
+        return {
+          id: game.id,
+          opponentRating: game.opponentRating,
+          result: game.result,
+          change: undefined
+        }
+      } else {
+        // Calculate expected score based on CURRENT rating (after previous games)
+        const newRating = calculateMyRatingNewRating(currentRating, game.opponentRating, kFactor.value, game.result)
+        const newChange = newRating - currentRating
+
+        // Update rating for next game
+        currentRating += newChange
+
+        return {
+          id: game.id,
+          opponentRating: game.opponentRating,
+          result: game.result,
+          change: newChange
+        }
+      }
+    })
   }
 
-  // Validate kFactor
-  if (!kFactor.value || isNaN(kFactor.value) || kFactor.value <= 0) {
-    kFactor.value = 15
-  }
-
-  // Recalculate changes CUMULATIVELY - each game affects the rating for the next game
-  let currentRating = myRating.value
-
-  games.value = games.value.map(game => {
-    // Validate game data
-    const validRating = !isNaN(game.opponentRating) && game.opponentRating > 0 ? game.opponentRating : 2000
-    const validResult = !isNaN(game.result) && game.result >= 0 && game.result <= 1 ? game.result : 1
-
-    // Calculate expected score based on CURRENT rating (after previous games)
-    const expected = 1 / (1 + Math.pow(10, (validRating - currentRating) / 400))
-    const newChange = kFactor.value * (validResult - expected)
-
-    // Update rating for next game
-    currentRating += newChange
-
-    return {
-      id: game.id,
-      opponentRating: validRating,
-      result: validResult,
-      change: newChange
-    }
-  })
   autoSave()
 }
 
@@ -258,28 +272,6 @@ function handleDrop(event: DragEvent, targetIndex: number) {
   calculate()
 }
 
-// Validace input hodnot
-function validateGameInput(game: Game) {
-  // Pokud je opponent rating prázdný nebo neplatný, nastavit výchozí hodnotu
-  if (!game.opponentRating || isNaN(game.opponentRating) || game.opponentRating < 0) {
-    game.opponentRating = 2000
-  }
-
-  // Omezit opponent rating na rozumný rozsah (100-4000)
-  if (game.opponentRating < 100) game.opponentRating = 100
-  if (game.opponentRating > 4000) game.opponentRating = 4000
-
-  // Zajistit že result je platná hodnota (0, 0.5, nebo 1)
-  if (![0, 0.5, 1].includes(game.result)) {
-    game.result = 1
-  }
-}
-
-function validateMyRating() {
-  myRating.value = validateRating(myRating.value, 1500)
-  calculate()
-}
-
 function clearAllGames() {
   if (games.value.length === 0) {
     return
@@ -310,10 +302,11 @@ loadSavedData()
         <input
           type="number"
           v-model.number="myRating"
-          @change="calculate"
-          @blur="validateMyRating"
-          min="100"
-          max="4000"
+          @input="(event) => {
+            myRating = event.target.value === '' ? undefined : Number(event.target.value)
+            calculate()
+          }"
+          min="0"
           step="1"
         >
       </div>
@@ -333,19 +326,25 @@ loadSavedData()
     <div class="stats">
       <div class="stat-item">
         <div class="stat-label">{{ t('summary.averageOpponent') }}:</div>
-        <div class="stat-value" :class="average > myRating ? 'positive' : average < myRating ? 'negative' : ''">{{ average.toFixed(1) }}</div>
+        <div class="stat-value" :class="averageOpponentRating > myRating ? 'positive' : averageOpponentRating < myRating ? 'negative' : ''">
+          {{ averageOpponentRating.toFixed(1) }}
+        </div>
       </div>
       <div class="stat-item" :class="totalChange > 0 ? 'stat-positive' : totalChange < 0 ? 'stat-negative' : ''">
         <div class="stat-label">{{ t('summary.totalChange') }}:</div>
-        <div class="stat-value" :class="totalChange > 0 ? 'positive' : totalChange < 0 ? 'negative' : ''">{{ (totalChange >= 0 ? '+ ' : '') + totalChange.toFixed(1) }}</div>
+        <div class="stat-value" :class="totalChange > 0 ? 'positive' : totalChange < 0 ? 'negative' : ''">
+          {{ totalChange !== undefined ? (totalChange >= 0 ? '+ ' : '') + totalChange.toFixed(1) : '-' }}
+        </div>
       </div>
       <div class="stat-item" :class="newRating > myRating ? 'stat-positive' : newRating < myRating ? 'stat-negative' : ''">
         <div class="stat-label">{{ t('summary.newRating') }}:</div>
-        <div class="stat-value" :class="newRating > myRating ? 'positive' : newRating < myRating ? 'negative' : ''">{{ newRating.toFixed(1) }}</div>
+        <div class="stat-value" :class="newRating > myRating ? 'positive' : newRating < myRating ? 'negative' : ''">
+          {{ newRating != undefined ? newRating.toFixed(1) : '-' }}
+        </div>
       </div>
       <div class="stat-item">
         <div class="stat-label">{{ t('summary.totalPoints') }}:</div>
-        <div class="stat-value">{{ totalPoints.toFixed(1) }} / {{ games.length }}</div>
+        <div class="stat-value">{{ totalPoints.toFixed(1) }} / {{ totalValidGames.toFixed(1) }}</div>
       </div>
     </div>
 
@@ -385,10 +384,11 @@ loadSavedData()
           <input
             type="number"
             v-model.number="game.opponentRating"
-            @change="calculate"
-            @blur="validateGameInput(game); calculate()"
-            min="100"
-            max="4000"
+            @input="(event) => {
+              game.opponentRating = event.target.value === '' ? undefined : Number(event.target.value)
+              calculate()
+            }"
+            min="0"
             step="1"
             class="opponent-rating"
           >
@@ -401,14 +401,14 @@ loadSavedData()
             class="rating-change"
             :class="game.change >= 0 ? 'positive' : 'negative'"
           >
-            {{ (game.change >= 0 ? '+' : '') + game.change.toFixed(2) }}
+            {{ game.change === undefined ? '-' : (game.change >= 0 ? '+' : '') + game.change.toFixed(2) }}
           </span>
           <button class="remove-btn" @click="removeGame(game.id)">-</button>
         </div>
       </template>
       </div>
 
-      <button id="addGameBtn" @click="addGame()">{{ t('game.addGame') }}</button>
+      <button id="addGameBtn" @click="addGame">{{ t('game.addGame') }}</button>
     </div>
 
     <div class="footer">
@@ -434,13 +434,6 @@ loadSavedData()
   padding: 25px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   box-sizing: border-box;
-}
-
-.header-with-language {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
 }
 
 h1 {
