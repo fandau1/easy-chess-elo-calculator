@@ -132,7 +132,7 @@ function calculate() {
     let currentRating = myRating.value
     games.value = games.value.map(game => {
 
-      if(!game.opponentRating || isNaN(game.opponentRating) || !game.result) {
+      if(game.opponentRating === undefined || isNaN(game.opponentRating) || game.result === undefined || isNaN(game.result)) {
         return {
           id: game.id,
           opponentRating: game.opponentRating,
@@ -156,6 +156,8 @@ function calculate() {
       }
     })
   }
+
+  console.log(games.value)
 
   autoSave()
 }
