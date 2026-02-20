@@ -17,9 +17,9 @@ interface Game {
 }
 
 interface SavedData {
-  myRating: number
+  myRating?: number
   kFactor: number
-  games: Array<{ opponentRating: number; result: number }>
+  games: Array<{ opponentRating: number | undefined; result: number }>
 }
 
 const myRating = ref<number | undefined>(2350)
@@ -103,7 +103,7 @@ const newRating = computed(() => {
   return myRating.value + total
 })
 
-function addGame(opponentRating: number | null = null, gameResult = 1) {
+function addGame(opponentRating: number | undefined = undefined, gameResult = 1) {
 
   games.value.push({
     id: gameCounter++,
@@ -303,7 +303,8 @@ loadSavedData()
           type="number"
           v-model.number="myRating"
           @input="(event) => {
-            myRating = event.target.value === '' ? undefined : Number(event.target.value)
+            const target = event.target as HTMLInputElement
+            myRating = target.value === '' ? undefined : Number(target.value)
             calculate()
           }"
           min="0"
@@ -326,19 +327,19 @@ loadSavedData()
     <div class="stats">
       <div class="stat-item">
         <div class="stat-label">{{ t('summary.averageOpponent') }}:</div>
-        <div class="stat-value" :class="averageOpponentRating > myRating ? 'positive' : averageOpponentRating < myRating ? 'negative' : ''">
+        <div class="stat-value" :class="myRating !== undefined && (averageOpponentRating > myRating ? 'positive' : averageOpponentRating < myRating ? 'negative' : '')">
           {{ averageOpponentRating.toFixed(1) }}
         </div>
       </div>
-      <div class="stat-item" :class="totalChange > 0 ? 'stat-positive' : totalChange < 0 ? 'stat-negative' : ''">
+      <div class="stat-item" :class="totalChange !== undefined && (totalChange > 0 ? 'stat-positive' : totalChange < 0 ? 'stat-negative' : '')">
         <div class="stat-label">{{ t('summary.totalChange') }}:</div>
-        <div class="stat-value" :class="totalChange > 0 ? 'positive' : totalChange < 0 ? 'negative' : ''">
+        <div class="stat-value" :class="totalChange !== undefined && (totalChange > 0 ? 'positive' : totalChange < 0 ? 'negative' : '')">
           {{ totalChange !== undefined ? (totalChange >= 0 ? '+ ' : '') + totalChange.toFixed(1) : '-' }}
         </div>
       </div>
-      <div class="stat-item" :class="newRating > myRating ? 'stat-positive' : newRating < myRating ? 'stat-negative' : ''">
+      <div class="stat-item" :class="newRating !== undefined && myRating !== undefined && (newRating > myRating ? 'stat-positive' : newRating < myRating ? 'stat-negative' : '')">
         <div class="stat-label">{{ t('summary.newRating') }}:</div>
-        <div class="stat-value" :class="newRating > myRating ? 'positive' : newRating < myRating ? 'negative' : ''">
+        <div class="stat-value" :class="newRating !== undefined && myRating !== undefined && (newRating > myRating ? 'positive' : newRating < myRating ? 'negative' : '')">
           {{ newRating != undefined ? newRating.toFixed(1) : '-' }}
         </div>
       </div>
@@ -385,7 +386,8 @@ loadSavedData()
             type="number"
             v-model.number="game.opponentRating"
             @input="(event) => {
-              game.opponentRating = event.target.value === '' ? undefined : Number(event.target.value)
+              const target = event.target as HTMLInputElement
+              game.opponentRating = target.value === '' ? undefined : Number(target.value)
               calculate()
             }"
             min="0"
@@ -399,7 +401,7 @@ loadSavedData()
           </select>
           <span
             class="rating-change"
-            :class="game.change >= 0 ? 'positive' : 'negative'"
+            :class="game.change !== undefined && (game.change >= 0 ? 'positive' : 'negative')"
           >
             {{ game.change === undefined ? '-' : (game.change >= 0 ? '+' : '') + game.change.toFixed(2) }}
           </span>
@@ -408,7 +410,7 @@ loadSavedData()
       </template>
       </div>
 
-      <button id="addGameBtn" @click="addGame">{{ t('game.addGame') }}</button>
+      <button id="addGameBtn" @click="() => addGame()">{{ t('game.addGame') }}</button>
     </div>
 
     <div class="footer">
