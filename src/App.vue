@@ -19,10 +19,10 @@ interface Game {
 interface SavedData {
   myRating?: number
   kFactor: number
-  games: Array<{ opponentRating: number | undefined; result: number }>
+  games: Array<{ opponentRating: number | undefined; result: number | undefined }>
 }
 
-const myRating = ref<number | string | undefined>(2350)
+const myRating = ref<number | undefined>(2350)
 const kFactor = ref(15)
 const games = ref<Game[]>([])
 let gameCounter = 1
@@ -86,7 +86,7 @@ const averageOpponentRating = computed(() => {
 
 const totalPoints = computed(() => {
   return games.value.reduce((sum, game) => {
-    return sum + (isGameValid(game) ? game.result : 0)
+    return sum + (isGameValid(game) ? game.result! : 0)
   }, 0)
 })
 
@@ -102,7 +102,7 @@ const totalChange = computed(() => {
 })
 
 const newRating = computed(() => {
-  if (myRating.value === undefined || isNaN(myRating.value)) return undefined
+  if (typeof myRating.value !== 'number' || isNaN(myRating.value)) return undefined
   const total = totalChange.value
   if (total === undefined || isNaN(total)) return undefined
   return myRating.value + total
@@ -121,16 +121,16 @@ function removeGame(gameId: number) {
 }
 
 const calculatedGames = computed(() => {
-  if (isMyRatingValid.value) {
-    let currentRating = myRating.value
+  if (isMyRatingValid.value && typeof myRating.value === 'number') {
+    let currentRating: number = myRating.value
 
     return games.value.map(g => {
       if (isGameValid(g)) {
         const newRating = calculateMyRatingNewRating(
           currentRating,
-          g.opponentRating,
+          g.opponentRating!,
           kFactor.value,
-          g.result
+          g.result!
         )
 
         const change = newRating - currentRating
@@ -253,9 +253,6 @@ function handleDrop(event: DragEvent, targetIndex: number) {
   list.splice(toIndex, 0, draggedItem)
 
   games.value = list
-
-  // Přepočítat všechny změny, protože se změnilo pořadí
-  calculate()
 }
 
 function clearAllGames() {
@@ -277,7 +274,6 @@ loadSavedData()
 watch(
   [myRating, kFactor, games],
   () => {
-    console.log(games);
     autoSave()
   },
   { deep: true }
@@ -302,7 +298,7 @@ watch(
       </div>
       <div class="k-factor-group">
         <label>{{ t('settings.kFactor') }}:</label>
-        <select v-model.number="kFactor" @change="calculate">
+        <select v-model.number="kFactor">
           <option :value="10">K-10</option>
           <option :value="15">K-15</option>
           <option :value="20">K-20</option>
@@ -316,7 +312,7 @@ watch(
     <div class="stats">
       <div class="stat-item">
         <div class="stat-label">{{ t('summary.averageOpponent') }}:</div>
-        <div class="stat-value" :class="isMyRatingValid && (averageOpponentRating > myRating ? 'positive' : averageOpponentRating < myRating ? 'negative' : '')">
+        <div class="stat-value" :class="isMyRatingValid && typeof myRating === 'number' && (averageOpponentRating > myRating ? 'positive' : averageOpponentRating < myRating ? 'negative' : '')">
           {{ averageOpponentRating.toFixed(1) }}
         </div>
       </div>
@@ -326,10 +322,10 @@ watch(
           {{ totalChange !== undefined ? (totalChange >= 0 ? '+ ' : '') + totalChange.toFixed(1) : '-' }}
         </div>
       </div>
-      <div class="stat-item" :class="newRating !== undefined && isMyRatingValid && (newRating > myRating ? 'stat-positive' : newRating < myRating ? 'stat-negative' : '')">
+      <div class="stat-item" :class="newRating !== undefined && isMyRatingValid && typeof myRating === 'number' && (newRating > myRating ? 'stat-positive' : newRating < myRating ? 'stat-negative' : '')">
         <div class="stat-label">{{ t('summary.newRating') }}:</div>
-        <div class="stat-value" :class="newRating !== undefined && isMyRatingValid && (newRating > myRating ? 'positive' : newRating < myRating ? 'negative' : '')">
-          {{ isMyRatingValid ? newRating.toFixed(1) : '-' }}
+        <div class="stat-value" :class="newRating !== undefined && isMyRatingValid && typeof myRating === 'number' && (newRating > myRating ? 'positive' : newRating < myRating ? 'negative' : '')">
+          {{ isMyRatingValid && newRating !== undefined ? newRating.toFixed(1) : '-' }}
         </div>
       </div>
       <div class="stat-item">
@@ -378,7 +374,7 @@ watch(
             step="1"
             class="opponent-rating"
           >
-          <select v-model.number="game.result" @change="calculate" class="game-result">
+          <select v-model.number="game.result" class="game-result">
             <option :value="undefined"> </option>
             <option :value="1">1</option>
             <option :value="0.5">0.5</option>
