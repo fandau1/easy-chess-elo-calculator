@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ReloadPrompt from './components/ReloadPrompt.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
@@ -12,7 +12,7 @@ const { t } = useI18n()
 interface Game {
   id: number
   opponentRating?: number
-  result: number
+  result?: number
   change?: number
 }
 
@@ -22,7 +22,7 @@ interface SavedData {
   games: Array<{ opponentRating: number | undefined; result: number }>
 }
 
-const myRating = ref<number | undefined>(2350)
+const myRating = ref<number | string | undefined>(2350)
 const kFactor = ref(15)
 const games = ref<Game[]>([])
 let gameCounter = 1
@@ -69,8 +69,12 @@ function autoSave() {
   localStorage.setItem('chessEloData', JSON.stringify(data))
 }
 
+const isMyRatingValid = computed(() => {
+  return typeof myRating.value === 'number' && !isNaN(myRating.value)
+})
+
 const isGameValid = (game: Game) => {
-  return game.opponentRating !== undefined && !isNaN(game.opponentRating) && game.result !== undefined && !isNaN(game.result)
+  return typeof game.opponentRating === 'number' && !isNaN(game.opponentRating) && typeof game.result === 'number' && !isNaN(game.result)
 }
 
 const averageOpponentRating = computed(() => {
@@ -91,9 +95,10 @@ const totalValidGames = computed(() => {
 })
 
 const totalChange = computed(() => {
-  if(myRating.value === undefined || isNaN(myRating.value)) return undefined
-
-  return games.value.reduce((sum, game) => sum + (game.change ?? 0), 0)
+  return calculatedGames.value.reduce(
+    (sum, g) => sum + (g.change ?? 0),
+    0
+  )
 })
 
 const newRating = computed(() => {
@@ -103,64 +108,43 @@ const newRating = computed(() => {
   return myRating.value + total
 })
 
-function addGame(opponentRating: number | undefined = undefined, gameResult = 1) {
-
+function addGame(opponentRating: number | undefined = undefined, gameResult: number | undefined = undefined) {
   games.value.push({
     id: gameCounter++,
     opponentRating: opponentRating,
     result: gameResult
   })
-  calculate()
-  autoSave()
 }
 
 function removeGame(gameId: number) {
   games.value = games.value.filter(game => game.id !== gameId)
-  calculate() // Recalculate all changes after removing a game
 }
 
-function calculate() {
-  // Validate myRating
-  // Skip calculation if myRating is not set
-  if (myRating.value === undefined || isNaN(myRating.value)) {
-    games.value = games.value.map(game => ({
-      ...game,
-      change: undefined
-    }))
-  } else {
-    // Recalculate changes CUMULATIVELY - each game affects the rating for the next game
+const calculatedGames = computed(() => {
+  if (isMyRatingValid.value) {
     let currentRating = myRating.value
-    games.value = games.value.map(game => {
 
-      if(game.opponentRating === undefined || isNaN(game.opponentRating) || game.result === undefined || isNaN(game.result)) {
-        return {
-          id: game.id,
-          opponentRating: game.opponentRating,
-          result: game.result,
-          change: undefined
-        }
+    return games.value.map(g => {
+      if (isGameValid(g)) {
+        const newRating = calculateMyRatingNewRating(
+          currentRating,
+          g.opponentRating,
+          kFactor.value,
+          g.result
+        )
+
+        const change = newRating - currentRating
+        currentRating += change
+
+        return { ...g, change }
       } else {
-        // Calculate expected score based on CURRENT rating (after previous games)
-        const newRating = calculateMyRatingNewRating(currentRating, game.opponentRating, kFactor.value, game.result)
-        const newChange = newRating - currentRating
-
-        // Update rating for next game
-        currentRating += newChange
-
-        return {
-          id: game.id,
-          opponentRating: game.opponentRating,
-          result: game.result,
-          change: newChange
-        }
+        return { ...g, change: undefined }
       }
     })
+  } else {
+    return games.value.map(g => ({ ...g, change: undefined }))
   }
-
-  console.log(games.value)
-
-  autoSave()
-}
+})
 
 // Drag & drop – smooth reorder
 let draggedIndex = -1
@@ -284,12 +268,20 @@ function clearAllGames() {
   if (confirmed) {
     games.value = []
     gameCounter = 1
-    autoSave()
   }
 }
 
 // Načíst uložená data při startu aplikace
 loadSavedData()
+
+watch(
+  [myRating, kFactor, games],
+  () => {
+    console.log(games);
+    autoSave()
+  },
+  { deep: true }
+)
 
 </script>
 
@@ -304,11 +296,6 @@ loadSavedData()
         <input
           type="number"
           v-model.number="myRating"
-          @input="(event) => {
-            const target = event.target as HTMLInputElement
-            myRating = target.value === '' ? undefined : Number(target.value)
-            calculate()
-          }"
           min="0"
           step="1"
         >
@@ -329,7 +316,7 @@ loadSavedData()
     <div class="stats">
       <div class="stat-item">
         <div class="stat-label">{{ t('summary.averageOpponent') }}:</div>
-        <div class="stat-value" :class="myRating !== undefined && (averageOpponentRating > myRating ? 'positive' : averageOpponentRating < myRating ? 'negative' : '')">
+        <div class="stat-value" :class="isMyRatingValid && (averageOpponentRating > myRating ? 'positive' : averageOpponentRating < myRating ? 'negative' : '')">
           {{ averageOpponentRating.toFixed(1) }}
         </div>
       </div>
@@ -339,10 +326,10 @@ loadSavedData()
           {{ totalChange !== undefined ? (totalChange >= 0 ? '+ ' : '') + totalChange.toFixed(1) : '-' }}
         </div>
       </div>
-      <div class="stat-item" :class="newRating !== undefined && myRating !== undefined && (newRating > myRating ? 'stat-positive' : newRating < myRating ? 'stat-negative' : '')">
+      <div class="stat-item" :class="newRating !== undefined && isMyRatingValid && (newRating > myRating ? 'stat-positive' : newRating < myRating ? 'stat-negative' : '')">
         <div class="stat-label">{{ t('summary.newRating') }}:</div>
-        <div class="stat-value" :class="newRating !== undefined && myRating !== undefined && (newRating > myRating ? 'positive' : newRating < myRating ? 'negative' : '')">
-          {{ newRating != undefined ? newRating.toFixed(1) : '-' }}
+        <div class="stat-value" :class="newRating !== undefined && isMyRatingValid && (newRating > myRating ? 'positive' : newRating < myRating ? 'negative' : '')">
+          {{ isMyRatingValid ? newRating.toFixed(1) : '-' }}
         </div>
       </div>
       <div class="stat-item">
@@ -387,25 +374,21 @@ loadSavedData()
           <input
             type="number"
             v-model.number="game.opponentRating"
-            @input="(event) => {
-              const target = event.target as HTMLInputElement
-              game.opponentRating = target.value === '' ? undefined : Number(target.value)
-              calculate()
-            }"
             min="0"
             step="1"
             class="opponent-rating"
           >
           <select v-model.number="game.result" @change="calculate" class="game-result">
+            <option :value="undefined"> </option>
             <option :value="1">1</option>
             <option :value="0.5">0.5</option>
             <option :value="0">0</option>
           </select>
           <span
             class="rating-change"
-            :class="game.change !== undefined && (game.change >= 0 ? 'positive' : 'negative')"
+            :class="calculatedGames[index]?.change !== undefined && (calculatedGames[index]?.change >= 0 ? 'positive' : 'negative')"
           >
-            {{ game.change === undefined ? '-' : (game.change >= 0 ? '+' : '') + game.change.toFixed(2) }}
+            {{ calculatedGames[index]?.change === undefined ? '-' : (calculatedGames[index]?.change >= 0 ? '+' : '') + calculatedGames[index]?.change.toFixed(2) }}
           </span>
           <button class="remove-btn" @click="removeGame(game.id)">-</button>
         </div>
