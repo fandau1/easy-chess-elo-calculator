@@ -22,10 +22,52 @@ interface SavedData {
   games: Array<{ opponentRating: number | undefined; result: number | undefined }>
 }
 
+interface SavedConfig {
+  name: string
+  data: SavedData
+  timestamp: number
+}
+
 const myRating = ref<number | undefined>(2350)
 const kFactor = ref(15)
 const games = ref<Game[]>([])
+const savedConfigs = ref<SavedConfig[]>([])
+const showConfigModal = ref(false)
+const configName = ref('')
+const showLoadModal = ref(false)
+const activeConfigName = ref<string | null>(null) // Sledování aktivní konfigurace
 let gameCounter = 1
+
+// Computed property pro zjištění, jestli jsou neuložené změny
+const hasUnsavedChanges = computed(() => {
+  if (!activeConfigName.value) return false
+
+  const activeConfig = savedConfigs.value.find(c => c.name === activeConfigName.value)
+  if (!activeConfig) return false
+
+  // Porovnat aktuální data s uloženými
+  const currentData = {
+    myRating: myRating.value,
+    kFactor: kFactor.value,
+    games: games.value
+      .map(game => ({
+        opponentRating: game.opponentRating,
+        result: game.result
+      }))
+  }
+
+  return JSON.stringify(currentData) !== JSON.stringify(activeConfig.data)
+})
+
+// Computed property pro zobrazení stavu konfigurace
+const configStatus = computed(() => {
+  if (!activeConfigName.value) {
+    return t('config.newUnsaved')
+  }
+  return hasUnsavedChanges.value
+    ? activeConfigName.value + ' *'
+    : activeConfigName.value
+})
 
 // Načíst uložená data
 function loadSavedData() {
@@ -54,9 +96,15 @@ function loadSavedData() {
     addGame(2578, 0)
     addGame(2456, 1)
   }
+
+  // Načíst aktivní konfiguraci
+  const savedActiveConfig = localStorage.getItem('chessEloActiveConfig')
+  if (savedActiveConfig) {
+    activeConfigName.value = savedActiveConfig
+  }
 }
 
-// Automaticky uložit data
+// Automaticky uložit data do localStorage (pro refresh stránky)
 function autoSave() {
   const data: SavedData = {
     myRating: myRating.value,
@@ -102,7 +150,7 @@ const totalChange = computed(() => {
 })
 
 const newRating = computed(() => {
-  if (typeof myRating.value !== 'number' || isNaN(myRating.value)) return undefined
+  if (!isMyRatingValid.value || typeof myRating.value !== 'number') return undefined
   const total = totalChange.value
   if (total === undefined || isNaN(total)) return undefined
   return myRating.value + total
@@ -268,8 +316,151 @@ function clearAllGames() {
   }
 }
 
+// Správa konfigurací
+function loadSavedConfigs() {
+  const saved = localStorage.getItem('chessEloConfigs')
+  if (saved) {
+    try {
+      savedConfigs.value = JSON.parse(saved)
+    } catch (error) {
+      console.error('Failed to load saved configs:', error)
+      savedConfigs.value = []
+    }
+  }
+}
+
+function quickSave() {
+  if (!activeConfigName.value) return
+
+  const data: SavedData = {
+    myRating: myRating.value,
+    kFactor: kFactor.value,
+    games: games.value
+      .map(game => ({
+        opponentRating: game.opponentRating,
+        result: game.result
+      }))
+  }
+
+  const config: SavedConfig = {
+    name: activeConfigName.value,
+    data: data,
+    timestamp: Date.now()
+  }
+
+  const existingIndex = savedConfigs.value.findIndex(c => c.name === config.name)
+  if (existingIndex >= 0) {
+    savedConfigs.value[existingIndex] = config
+    localStorage.setItem('chessEloConfigs', JSON.stringify(savedConfigs.value))
+    localStorage.setItem('chessEloActiveConfig', activeConfigName.value)
+  }
+}
+
+function saveCurrentConfig() {
+  const nameToSave = configName.value.trim() || activeConfigName.value
+
+  if (!nameToSave) {
+    alert(t('config.enterName'))
+    return
+  }
+
+  const data: SavedData = {
+    myRating: myRating.value,
+    kFactor: kFactor.value,
+    games: games.value
+      .filter(game => typeof game.result === 'number')
+      .map(game => ({
+        opponentRating: game.opponentRating,
+        result: game.result!
+      }))
+  }
+
+  const config: SavedConfig = {
+    name: nameToSave,
+    data: data,
+    timestamp: Date.now()
+  }
+
+  // Zkontrolovat, jestli už existuje konfigurace se stejným jménem
+  const existingIndex = savedConfigs.value.findIndex(c => c.name === config.name)
+  if (existingIndex >= 0) {
+    if (activeConfigName.value !== config.name) {
+      const confirmed = confirm(t('config.confirmOverwrite'))
+      if (!confirmed) return
+    }
+    savedConfigs.value[existingIndex] = config
+  } else {
+    savedConfigs.value.push(config)
+  }
+
+  localStorage.setItem('chessEloConfigs', JSON.stringify(savedConfigs.value))
+
+  // Nastavit jako aktivní konfiguraci
+  activeConfigName.value = config.name
+  localStorage.setItem('chessEloActiveConfig', config.name)
+
+  configName.value = ''
+  showConfigModal.value = false
+}
+
+function loadConfig(config: SavedConfig) {
+  myRating.value = config.data.myRating
+  kFactor.value = config.data.kFactor
+
+  games.value = []
+  gameCounter = 1
+
+  config.data.games.forEach(game => {
+    addGame(game.opponentRating, game.result)
+  })
+
+  // Nastavit jako aktivní konfiguraci
+  activeConfigName.value = config.name
+  localStorage.setItem('chessEloActiveConfig', config.name)
+
+  showLoadModal.value = false
+}
+
+function deleteConfig(index: number) {
+  const confirmed = confirm(t('config.confirmDelete'))
+  if (confirmed) {
+    const configToDelete = savedConfigs.value[index]
+
+    // Pokud mažeme aktivní konfiguraci, deaktivovat auto-save
+    if (configToDelete && activeConfigName.value === configToDelete.name) {
+      activeConfigName.value = null
+      localStorage.removeItem('chessEloActiveConfig')
+    }
+
+    savedConfigs.value.splice(index, 1)
+    localStorage.setItem('chessEloConfigs', JSON.stringify(savedConfigs.value))
+  }
+}
+
+function createNewConfig() {
+  const confirmed = games.value.length > 0
+    ? confirm(t('config.confirmNewConfig'))
+    : true
+
+  if (confirmed) {
+    myRating.value = 2350
+    kFactor.value = 15
+    games.value = []
+    gameCounter = 1
+    activeConfigName.value = null
+    localStorage.removeItem('chessEloActiveConfig')
+    showLoadModal.value = false
+  }
+}
+
+function formatDate(timestamp: number): string {
+  const date = new Date(timestamp)
+  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString()
+}
+
 // Načíst uložená data při startu aplikace
 loadSavedData()
+loadSavedConfigs()
 
 watch(
   [myRating, kFactor, games],
@@ -392,6 +583,78 @@ watch(
       </div>
 
       <button id="addGameBtn" @click="() => addGame()">{{ t('game.addGame') }}</button>
+    </div>
+
+    <div class="config-section">
+      <span class="games-title">{{ t('config.configuration') }}</span>
+      <div class="config-controls" :class="{ 'has-quick-save': activeConfigName && hasUnsavedChanges }">
+        <button
+          v-if="activeConfigName && hasUnsavedChanges"
+          class="config-btn quick-save-btn"
+          @click="quickSave"
+          :title="t('actions.save')"
+        >
+          {{ t("actions.save") }}
+        </button>
+        <button class="config-btn save-btn" @click="showConfigModal = true">
+          {{ t('actions.saveAs') }}
+        </button>
+        <button class="config-btn" @click="showLoadModal = true">{{ t('actions.load') }}</button>
+      </div>
+
+      <!-- Indikátor aktivní konfigurace -->
+      <div class="active-config-indicator">
+      <span class="active-config-label">
+        {{ t('config.currentConfig') }}:
+        <strong :class="{ 'unsaved': !activeConfigName || hasUnsavedChanges }">
+          {{ configStatus }}
+        </strong>
+      </span>
+      </div>
+    </div>
+
+    <!-- Modal pro uložení konfigurace -->
+    <div v-if="showConfigModal" class="modal-overlay" @click="showConfigModal = false">
+      <div class="modal-content" @click.stop>
+        <h2>{{ t('config.saveTitle') }}</h2>
+        <input
+          type="text"
+          v-model="configName"
+          :placeholder="activeConfigName || t('config.namePlaceholder')"
+          @keyup.enter="saveCurrentConfig"
+          class="config-name-input"
+        >
+        <div class="modal-buttons">
+          <button @click="saveCurrentConfig">{{ t('actions.save') }}</button>
+          <button @click="showConfigModal = false">{{ t('actions.cancel') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal pro načtení konfigurace -->
+    <div v-if="showLoadModal" class="modal-overlay" @click="showLoadModal = false">
+      <div class="modal-content" @click.stop>
+        <h2>{{ t('config.loadTitle') }}</h2>
+        <div v-if="savedConfigs.length === 0" class="no-configs">
+          {{ t('config.noConfigs') }}
+        </div>
+        <div v-else class="configs-list">
+          <div v-for="(config, index) in savedConfigs" :key="index" class="config-item">
+            <div class="config-info">
+              <div class="config-name">{{ config.name }}</div>
+              <div class="config-date">{{ formatDate(config.timestamp) }}</div>
+            </div>
+            <div class="config-actions">
+              <button @click="loadConfig(config)" class="load-btn">{{ t('actions.load') }}</button>
+              <button @click="deleteConfig(index)" class="delete-btn">{{ t('actions.delete') }}</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-buttons">
+          <button @click="createNewConfig" class="new-config-btn">{{ t('config.newConfig') }}</button>
+          <button @click="showLoadModal = false">{{ t('actions.close') }}</button>
+        </div>
+      </div>
     </div>
 
     <div class="footer">
@@ -714,6 +977,223 @@ button:active {
   margin-top: 20px;
   padding-top: 15px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.config-section {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* === Config Section === */
+.config-controls {
+  margin-top: 15px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.config-controls.has-quick-save {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.config-btn {
+  padding: 12px;
+  font-size: 14px;
+  background: #4a4a4a;
+  color: #fff;
+  position: relative;
+}
+
+.config-btn:hover {
+  background: #5a5a5a;
+}
+
+.quick-save-btn {
+  background: #4ade80;
+  color: #000;
+  font-weight: bold;
+}
+
+.quick-save-btn:hover {
+  background: #5aee90;
+}
+
+.save-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.unsaved-indicator {
+  color: #fbbf24;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* === Active Config Indicator === */
+.active-config-indicator {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: rgba(74, 222, 128, 0.15);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.active-config-label {
+  font-size: 13px;
+  color: #4ade80;
+  flex: 1;
+}
+
+.active-config-label strong {
+  font-weight: bold;
+  color: #5aee90;
+}
+
+.active-config-label strong.unsaved {
+  color: #fbbf24;
+}
+
+.new-config-btn {
+  background: #4ade80;
+  color: #000;
+}
+
+.new-config-btn:hover {
+  background: #5aee90;
+}
+
+/* === Modal === */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: #3a3a3a;
+  border-radius: 10px;
+  padding: 25px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 20px;
+  color: #fff;
+}
+
+.config-name-input {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 2px solid #666;
+  border-radius: 5px;
+  background: #fff;
+  color: #000;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-buttons button {
+  flex: 1;
+}
+
+.no-configs {
+  text-align: center;
+  color: #aaa;
+  padding: 20px;
+  font-size: 14px;
+}
+
+.configs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.config-item {
+  background: #2a2a2a;
+  padding: 15px;
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.config-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.config-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 5px;
+  word-break: break-word;
+}
+
+.config-date {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.config-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.load-btn {
+  background: #4ade80;
+  color: #000;
+  padding: 8px 12px;
+  font-size: 13px;
+  min-height: auto;
+}
+
+.load-btn:hover {
+  background: #5aee90;
+}
+
+.delete-btn {
+  background: #f87171;
+  color: #000;
+  padding: 8px 12px;
+  font-size: 13px;
+  min-height: auto;
+}
+
+.delete-btn:hover {
+  background: #ff8181;
 }
 
 .install-prompt {

@@ -32,10 +32,29 @@
   "actions": {
     "reset": "Resetovat Vše",
     "confirmReset": "Opravdu chcete resetovat všechna data?",
+    "saveAs": "Uložit Jako...",
     "save": "Uložit",
+    "saveChanges": "Uložit Změny",
+    "delete": "Smazat",
     "cancel": "Zrušit",
     "close": "Zavřít",
+    "load": "Načíst",
     "clearAll": "Vymazat Vše"
+  },
+  "config": {
+    "configuration": "Konfigurace",
+    "saveTitle": "Nová Konfigurace",
+    "loadTitle": "Načíst Uloženou Konfiguraci",
+    "namePlaceholder": "Název konfigurace...",
+    "enterName": "Prosím zadejte název konfigurace",
+    "confirmOverwrite": "Konfigurace s tímto názvem již existuje. Chcete ji přepsat?",
+    "confirmDelete": "Opravdu chcete smazat tuto konfiguraci?",
+    "confirmNewConfig": "Opravdu chcete vytvořit novou konfiguraci? Neuložené změny budou ztraceny.",
+    "noConfigs": "Žádné uložené konfigurace",
+    "activeConfig": "Aktivní konfigurace",
+    "currentConfig": "Konfigurace",
+    "newUnsaved": "Nová (neuložená)",
+    "newConfig": "Nová Konfigurace"
   },
   "language": {
     "select": "Jazyk",
